@@ -203,6 +203,7 @@ window.showSync = function(msg, cor) {
 };
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <header>
@@ -219,6 +220,7 @@ window.showSync = function(msg, cor) {
   <div class="tab" onclick="goTab('comparador')">⚖️ Comparador</div>
   <div class="tab" onclick="goTab('relatorio')">📊 Relatório</div>
   <div class="tab" onclick="goTab('alertas')">🔔 Alertas</div>
+  <div class="tab" onclick="goTab('importar')">📥 Importar</div>
   <div class="tab" onclick="goTab('integracao')">🔗 MS Farma</div>
 </div>
 
@@ -395,6 +397,40 @@ window.showSync = function(msg, cor) {
     </div>
   </div>
 </div>
+
+<!-- IMPORTAR VENDAS -->
+<div id="sec-importar" class="sec">
+  <div class="sec-title" style="margin-bottom:4px">📥 Importar Vendas do Infarma</div>
+  <div class="sec-sub" style="margin-bottom:14px">Selecione o XLS de "Vendas por Itens" gerado pelo Infarma</div>
+
+  <div class="card">
+    <div class="card-titulo">📂 Selecionar arquivo XLS</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+      No Infarma: Relatórios → Vendas por Itens → Exportar XLS
+    </div>
+    <input type="file" id="imp-file" accept=".xls,.xlsx" style="display:none" onchange="lerArquivoXLS(this)">
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="document.getElementById('imp-file').click()">
+      📂 Selecionar arquivo XLS
+    </button>
+    <div id="imp-status" style="margin-top:10px;font-size:.78rem;color:var(--muted)"></div>
+  </div>
+
+  <div id="imp-preview" style="display:none">
+    <div class="card">
+      <div class="card-titulo">🍼 Fraldas encontradas no arquivo</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px" id="imp-periodo"></div>
+      <div id="imp-lista"></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">⚠️ Não reconhecidos (verificar manualmente)</div>
+      <div id="imp-nao-reconhecidos" style="font-size:.78rem;color:var(--muted)"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="confirmarImportacao()">
+      ✅ Confirmar e importar vendas
+    </button>
+  </div>
+</div>
+
 
 <!-- MODAL ESTOQUE -->
 <div class="modal-bg" id="modal-estoque">
@@ -628,13 +664,13 @@ function marcaClass(m){return {Hipopó:'m-hipopo',Babysec:'m-babysec',MamyPoko:'
 function margem(c,v){if(!c||!v)return null;return((v-c)/v)*100;}
 function statusEst(data,p){const q=data.estoques[p.id]||0;if(q===0)return 'comprar';if(q<=p.minimo)return 'atencao';return 'ok';}
 
-const TABS=['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','integracao'];
+const TABS=['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','importar','integracao'];
 function goTab(id){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ativo'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
   document.getElementById('sec-'+id).classList.add('ativo');
   document.querySelectorAll('.tab')[TABS.indexOf(id)].classList.add('ativo');
-  ({dashboard:renderDashboard,estoque:()=>renderEstoque('Todas'),precos:()=>renderPrecos('Todas'),vendas:renderVendas,compras:renderCompras,comparador:initComparador,relatorio:initRelatorio,alertas:renderAlertas,integracao:initIntegracao})[id]?.();
+  ({dashboard:renderDashboard,estoque:()=>renderEstoque('Todas'),precos:()=>renderPrecos('Todas'),vendas:renderVendas,compras:renderCompras,comparador:initComparador,relatorio:initRelatorio,alertas:renderAlertas,importar:()=>{},integracao:initIntegracao})[id]?.();
 }
 
 function renderDashboard(){
@@ -938,6 +974,209 @@ function renderCompras(){
     </div>`;
   }).join('');
   document.getElementById('total-compras').textContent=total>0?fmt(total):'— (sem preços)';
+}
+
+// ── IMPORTAR VENDAS INFARMA ───────────────────────────────────────────────────
+let _importCache = [];
+
+// Palavras-chave para identificar fraldas por marca/linha
+function identificarProduto(descricao, produtos) {
+  const d = descricao.toUpperCase();
+  
+  // Tenta match direto por palavras-chave
+  for (const p of produtos) {
+    const marca = p.marca.toUpperCase();
+    const linha = p.linha.toUpperCase();
+    const tam = p.tam.toUpperCase();
+    
+    // Verifica marca
+    const temMarca = 
+      (marca === 'HIPOPÓ' && (d.includes('HIPOPO') || d.includes('HIPO PO'))) ||
+      (marca === 'BABYSEC' && d.includes('BABYSEC')) ||
+      (marca === 'MILI' && (d.includes('MILI') || d.includes('LOVECARE') || d.includes('LOVE CARE'))) ||
+      (marca === 'PAMPERS' && d.includes('PAMPERS'));
+    
+    if (!temMarca) continue;
+    
+    // Verifica tamanho
+    const temTam = 
+      (tam === 'M' && (d.includes(' M ') || d.includes(' M/') || d.endsWith(' M') || d.includes('C/M ') || d.includes('30UND') || d.includes('50UND') || d.includes('72UND') || d.includes('70UND'))) ||
+      (tam === 'G' && (d.includes(' G ') || d.includes(' G/') || d.endsWith(' G') || d.includes('24UND') || d.includes('48UND') || d.includes('60UND'))) ||
+      (tam === 'XG' && (d.includes('XG') || d.includes('22UND') || d.includes('44UND') || d.includes('50UND') || d.includes('26UND'))) ||
+      (tam === 'XXG' && (d.includes('XXG') || d.includes('20UND') || d.includes('38UND') || d.includes('40UND') || d.includes('42UND'))) ||
+      (tam === 'XXXG' && (d.includes('XXXG') || d.includes('16UND') || d.includes('18UND'))) ||
+      (tam === 'P' && (d.includes(' P ') || d.includes(' P/') || d.endsWith(' P') || d.includes('56UND') || d.includes('28UND') || d.includes('72UN'))) ||
+      (tam === 'RN' && d.includes('RN')) ||
+      (tam === 'RN 4kg' && d.includes('RN') && d.includes('4')) ||
+      (tam === 'RN 6kg' && d.includes('RN') && d.includes('6'));
+    
+    if (!temTam) continue;
+    
+    // Verifica tipo (FITA vs SHORTINHO)
+    const eFita = d.includes('FITA') || d.includes('PAC') || d.includes('ECON') || d.includes('HIPER') || d.includes('MEGA') && !d.includes('SHORT') && !d.includes('CALCA') && !d.includes('ROUPA') && !d.includes('PANTS');
+    const eShort = d.includes('SHORT') || d.includes('CALCA') || d.includes('ROUPA') || d.includes('PANTS') || d.includes('JUMB');
+    
+    if (p.tipo === 'FITA' && eShort && !eFita) continue;
+    if (p.tipo === 'SHORTINHO' && eFita && !eShort) continue;
+    
+    return p;
+  }
+  return null;
+}
+
+function lerArquivoXLS(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('imp-status').textContent = '⏳ Lendo arquivo...';
+  document.getElementById('imp-preview').style.display = 'none';
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      // Usar SheetJS para ler XLS
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, {type:'array', cellDates:true});
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet, {header:1});
+      
+      // Encontrar linha de cabeçalho
+      let headerIdx = -1;
+      for (let i = 0; i < Math.min(rows.length, 10); i++) {
+        const r = rows[i].map(c => String(c||'').toUpperCase());
+        if (r.some(c => c.includes('DESCRIÇÃO') || c.includes('DESCRICAO') || c.includes('PRODUTO'))) {
+          headerIdx = i;
+          break;
+        }
+      }
+      
+      if (headerIdx === -1) {
+        document.getElementById('imp-status').textContent = '❌ Formato não reconhecido. Verifique se é o arquivo correto.';
+        return;
+      }
+      
+      const headers = rows[headerIdx].map(c => String(c||'').toLowerCase().trim());
+      const idxDesc = headers.findIndex(h => h.includes('descrição') || h.includes('descricao'));
+      const idxQtd = headers.findIndex(h => h.includes('qtd'));
+      const idxPreco = headers.findIndex(h => h.includes('prc unitar') || h.includes('preco unit') || h.includes('vl unit'));
+      const idxData = headers.findIndex(h => h.includes('data'));
+      const idxCod = headers.findIndex(h => h.includes('produto') || h.includes('código') || h.includes('codigo'));
+      
+      // Coletar datas para período
+      const datas = [];
+      const dbData = load();
+      const produtos = dbData.produtos;
+      
+      // Agrupar vendas por produto
+      const vendasAgrupadas = {};
+      const naoReconhecidos = {};
+      
+      for (let i = headerIdx + 1; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row || !row[idxDesc]) continue;
+        const desc = String(row[idxDesc]).trim();
+        if (!desc || desc.length < 3) continue;
+        
+        // Só processa fraldas
+        const dUp = desc.toUpperCase();
+        if (!dUp.includes('FRALDA') && !dUp.includes('HIPOPO') && !dUp.includes('BABYSEC') && !dUp.includes('MILI') && !dUp.includes('PAMPERS')) continue;
+        
+        const qtd = Number(row[idxQtd]) || 1;
+        const preco = Number(row[idxPreco]) || 0;
+        const cod = idxCod >= 0 ? String(row[idxCod]||'') : '';
+        
+        if (idxData >= 0 && row[idxData]) datas.push(new Date(row[idxData]));
+        
+        const p = identificarProduto(desc, produtos);
+        if (p) {
+          if (!vendasAgrupadas[p.id]) vendasAgrupadas[p.id] = {p, qtd:0, preco:0, linhas:[]};
+          vendasAgrupadas[p.id].qtd += qtd;
+          vendasAgrupadas[p.id].preco = preco; // último preço visto
+          vendasAgrupadas[p.id].linhas.push(desc);
+        } else {
+          const key = cod || desc;
+          if (!naoReconhecidos[key]) naoReconhecidos[key] = {desc, qtd:0};
+          naoReconhecidos[key].qtd += qtd;
+        }
+      }
+      
+      // Período
+      let periodoTxt = '';
+      if (datas.length > 0) {
+        const minD = new Date(Math.min(...datas));
+        const maxD = new Date(Math.max(...datas));
+        periodoTxt = minD.toLocaleDateString('pt-BR') + ' a ' + maxD.toLocaleDateString('pt-BR');
+      }
+      
+      _importCache = {vendasAgrupadas, periodoTxt};
+      
+      // Renderizar preview
+      const total = Object.keys(vendasAgrupadas).length;
+      document.getElementById('imp-status').textContent = `✅ ${total} produtos de fraldas encontrados!`;
+      document.getElementById('imp-periodo').textContent = periodoTxt ? 'Período: ' + periodoTxt : '';
+      
+      document.getElementById('imp-lista').innerHTML = Object.values(vendasAgrupadas).map(v => {
+        const pr = dbData.precos[v.p.id] || {};
+        const m = pr.custo && v.preco ? margem(pr.custo, v.preco) : null;
+        const catKey = getCategoria(v.p);
+        const st = statusMargem(m, catKey);
+        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--borda)">
+          <div style="flex:1">
+            <div style="font-size:.8rem;font-weight:700"><span class="marca-badge ${marcaClass(v.p.marca)}">${v.p.marca}</span> ${v.p.linha} ${v.p.tam}</div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${v.qtd} pacotes · ${v.preco ? fmt(v.preco) : '—'}/pct${m !== null ? ' · Margem: <strong class="'+st.cls+'">'+pct(m)+'</strong>' : ''}</div>
+          </div>
+          <div style="font-size:1rem;font-weight:800;color:var(--accent)">${v.qtd}</div>
+        </div>`;
+      }).join('') || '<div style="color:var(--muted);font-size:.8rem">Nenhum produto reconhecido</div>';
+      
+      // Não reconhecidos
+      const nrList = Object.values(naoReconhecidos);
+      document.getElementById('imp-nao-reconhecidos').innerHTML = nrList.length === 0
+        ? '<span style="color:var(--verde)">✅ Todos os produtos foram reconhecidos!</span>'
+        : nrList.map(n => `<div style="padding:4px 0;border-bottom:1px solid var(--borda)">${n.desc} — <strong>${n.qtd} pct</strong></div>`).join('');
+      
+      document.getElementById('imp-preview').style.display = 'block';
+      
+    } catch(err) {
+      document.getElementById('imp-status').textContent = '❌ Erro ao ler arquivo: ' + err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function confirmarImportacao() {
+  if (!_importCache || !_importCache.vendasAgrupadas) return;
+  const data = load();
+  if (!data.vendas) data.vendas = [];
+  
+  const periodo = _importCache.periodoTxt || 'Importado do Infarma';
+  const agora = new Date().toISOString();
+  
+  Object.values(_importCache.vendasAgrupadas).forEach(v => {
+    // Desconta do estoque
+    data.estoques[v.p.id] = Math.max(0, (data.estoques[v.p.id] || 0) - v.qtd);
+    // Registra venda
+    data.vendas.push({
+      id: Date.now().toString() + Math.random().toString(36).substr(2,5),
+      produtoId: v.p.id,
+      qtd: v.qtd,
+      periodo: periodo,
+      obs: 'Importado Infarma',
+      data: agora
+    });
+    // Atualiza preço de venda se não tinha
+    if (v.preco && (!data.precos[v.p.id] || !data.precos[v.p.id].venda)) {
+      if (!data.precos[v.p.id]) data.precos[v.p.id] = {};
+      data.precos[v.p.id].venda = v.preco;
+    }
+  });
+  
+  save(data);
+  _importCache = [];
+  document.getElementById('imp-preview').style.display = 'none';
+  document.getElementById('imp-status').textContent = '✅ Vendas importadas com sucesso!';
+  document.getElementById('imp-file').value = '';
+  alert('✅ Vendas importadas! Veja o histórico na aba Vendas.');
 }
 
 // ── INTEGRAÇÃO MS FARMA ───────────────────────────────────────────────────────
