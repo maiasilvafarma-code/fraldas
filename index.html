@@ -489,7 +489,7 @@ window.showSync = function(msg, cor) {
 </div>
 
 <script>
-const KEY = 'fraldas-msfarma-v2';
+const KEY = 'fraldas-msfarma-v3';
 
 const CATEGORIAS = {
   economica:     {label:'ECONÔMICA',    cls:'cat-economica',    min:12,ideal_min:12,ideal_max:18,teto:20},
@@ -550,6 +550,7 @@ const PRODUTOS_INICIAIS = [
   {id:'b07',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
   {id:'b08',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:''},
   {id:'b09',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'XXG',minimo:3,obs:''},
+  {id:'b09x',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'XXXG',minimo:3,obs:''},
   {id:'b10',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:3,obs:''},
   {id:'b11',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
   {id:'b12',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:''},
@@ -580,18 +581,50 @@ const PRODUTOS_INICIAIS = [
   {id:'m14',marca:'Mili',linha:'Mega',tipo:'FITA',tam:'XXG',minimo:3,obs:''},
   {id:'p01',marca:'Pampers',linha:'Fita',tipo:'FITA',tam:'RN 4kg',minimo:3,obs:''},
   {id:'p02',marca:'Pampers',linha:'Fita',tipo:'FITA',tam:'RN 6kg',minimo:3,obs:''},
+  // MamyPoko
+  {id:'mp01',marca:'MamyPoko',linha:'Pacotão',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
+  {id:'mp02',marca:'MamyPoko',linha:'Mega',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
+  // Looping
+  {id:'lo01',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
+  {id:'lo02',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'G',minimo:3,obs:'Descontinuado'},
+  {id:'lo03',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XG',minimo:3,obs:'Descontinuado'},
+  {id:'lo04',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XXG',minimo:3,obs:'Descontinuado'},
 ];
 
 const ESTOQUE_INICIAL = {
-  h01:4,h02:4,h03:0,h04:3,h05:0,h06:4,h07:8,h08:7,
-  h09:6,h10:1,h11:0,h12:2,h13:2,h14:2,h15:0,h16:3,h17:3,
-  h18:0,h19:0,h20:0,h21:0,
-  b01:2,b02:11,b03:0,b04:15,b05:6,b06:2,b07:4,b08:4,b09:4,
-  b10:3,b11:4,b12:1,b13:2,b14:0,b15:0,b16:0,b17:0,b18:0,
-  b19:0,b20:0,b21:0,b22:0,b23:0,
-  m01:0,m02:0,m03:0,m04:0,m05:0,m06:0,m07:0,m08:0,
-  m09:0,m10:0,m11:0,m12:0,m13:0,m14:0,
-  p01:0,p02:0
+  // Hipopó Shortinho Mega
+  h01:4,h02:4,h03:0,h04:3,
+  // Hipopó Premium Jumbinho
+  h05:0,h06:4,h07:8,h08:7,
+  // Hipopó Econômica Fita
+  h09:6,h10:1,h11:0,h12:2,h13:2,
+  // Hipopó Hiper Fita
+  h14:2,h15:0,h16:3,h17:3,
+  // Hipopó Shortinho Jumbo
+  h18:6,h19:0,h20:4,h21:5,
+  // Babysec Premium Shortinho Mega
+  b01:2,b02:11,b03:0,b04:15,b05:6,
+  // Babysec Premium Shortinho Hiper
+  b06:2,b07:4,b08:4,b09:4,
+  // Babysec Ultrasec Shortinho Mega
+  b10:3,b11:4,b12:1,b13:2,b14:3,
+  // Babysec Ultrasec Mega Fita
+  b15:6,b16:3,b17:5,b18:10,
+  // Babysec Ultrasec Hiper Fita
+  b09x:0,
+  b19:1,b20:2,b21:1,b22:0,b23:1,
+  // Mili Pants Love & Care Jumbo
+  m01:5,m02:6,m03:0,m04:0,
+  // Mili Jumbo Fita
+  m05:9,m06:9,m07:6,m08:5,m09:9,m10:9,
+  // Mili Mega Fita
+  m11:5,m12:7,m13:5,m14:6,
+  // Pampers
+  p01:3,p02:4,
+  // MamyPoko
+  mp01:2,mp02:3,
+  // Looping
+  lo01:4,lo02:3,lo03:4,lo04:4,
 };
 
 // Preços da nota do representante
