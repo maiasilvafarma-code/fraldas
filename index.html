@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="pt-BR" translate="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🍼 Fraldas — MS Farma</title>
+<style>
+  :root {
+    --verde:#22c55e;--amarelo:#f59e0b;--vermelho:#ef4444;
+    --azul:#3b82f6;--roxo:#8b5cf6;
+    --bg:#0f172a;--card:#1e293b;--card2:#273348;
+    --borda:#334155;--texto:#f1f5f9;--muted:#94a3b8;--accent:#38bdf8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--bg);color:var(--texto);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;}
+  header{background:var(--card);border-bottom:1px solid var(--borda);padding:14px 20px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:100;}
+  header h1{font-size:1.1rem;font-weight:700;color:var(--accent);}
+  header .data{font-size:0.75rem;color:var(--muted);margin-left:auto;}
+  .tabs{display:flex;background:var(--card);border-bottom:1px solid var(--borda);overflow-x:auto;position:sticky;top:57px;z-index:99;}
+  .tab{padding:12px 16px;font-size:0.82rem;font-weight:600;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s;}
+  .tab.ativo{color:var(--accent);border-bottom-color:var(--accent);}
+  .sec{display:none;padding:16px;max-width:700px;margin:0 auto;}
+  .sec.ativo{display:block;}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:12px;padding:14px;margin-bottom:10px;}
+  .card-titulo{font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:10px;}
+  .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px;}
+  .kpi{background:var(--card);border:1px solid var(--borda);border-radius:10px;padding:14px;text-align:center;}
+  .kpi-val{font-size:1.5rem;font-weight:800;}
+  .kpi-label{font-size:0.68rem;color:var(--muted);margin-top:4px;}
+  .kpi.verde .kpi-val{color:var(--verde);}
+  .kpi.amarelo .kpi-val{color:var(--amarelo);}
+  .kpi.vermelho .kpi-val{color:var(--vermelho);}
+  .kpi.azul .kpi-val{color:var(--accent);}
+  .kpi.roxo .kpi-val{color:var(--roxo);}
+  .dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;display:inline-block;}
+  .dot.verde{background:var(--verde);}
+  .dot.amarelo{background:var(--amarelo);}
+  .dot.vermelho{background:var(--vermelho);box-shadow:0 0 5px var(--vermelho);}
+  .badge{font-size:0.67rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+  .badge-ok{background:#052e16;color:var(--verde);}
+  .badge-atencao{background:#2a1a00;color:var(--amarelo);}
+  .badge-comprar{background:#2d0a0a;color:var(--vermelho);}
+  .badge-urgente{background:#7f1d1d;color:#fca5a5;}
+  .marca-badge{font-size:0.67rem;font-weight:700;padding:2px 7px;border-radius:20px;}
+  .m-hipopo{background:#3b1f5e;color:#a78bfa;}
+  .m-babysec{background:#1e3a5f;color:#60a5fa;}
+  .m-mamypoko{background:#1a3a2f;color:#34d399;}
+  .m-mili{background:#3d2a00;color:#fbbf24;}
+  .m-pampers{background:#1e3a5f;color:#38bdf8;}
+  .m-looping{background:#2d1515;color:#f87171;}
+  table{width:100%;border-collapse:collapse;font-size:0.78rem;}
+  th{background:var(--card2);padding:7px 8px;text-align:left;font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;}
+  td{padding:8px 8px;border-bottom:1px solid var(--borda);vertical-align:middle;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:rgba(56,189,248,.04);}
+  label{display:block;font-size:0.72rem;color:var(--muted);margin-bottom:4px;}
+  input,select{width:100%;background:var(--card2);border:1px solid var(--borda);border-radius:8px;color:var(--texto);padding:8px 10px;font-size:0.83rem;outline:none;}
+  input:focus,select:focus{border-color:var(--accent);}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .btn{display:inline-flex;align-items:center;gap:5px;padding:8px 14px;border-radius:8px;font-size:0.8rem;font-weight:700;cursor:pointer;border:none;transition:all .15s;}
+  .btn-primary{background:var(--accent);color:#0f172a;}
+  .btn-primary:hover{background:#7dd3fc;}
+  .btn-ghost{background:var(--card2);color:var(--texto);border:1px solid var(--borda);}
+  .btn-ghost:hover{border-color:var(--accent);color:var(--accent);}
+  .btn-danger{background:#2d0a0a;color:var(--vermelho);border:1px solid #7f1d1d;}
+  .btn-sm{padding:4px 9px;font-size:0.7rem;}
+  .flex-entre{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:8px;}
+  .sec-title{font-size:1rem;font-weight:700;}
+  .sec-sub{font-size:0.73rem;color:var(--muted);margin-top:3px;}
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;align-items:center;justify-content:center;padding:16px;}
+  .modal-bg.aberto{display:flex;}
+  .modal{background:var(--card);border:1px solid var(--borda);border-radius:16px;padding:20px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+  .modal-titulo{font-size:0.95rem;font-weight:700;margin-bottom:14px;color:var(--accent);}
+  .modal-actions{display:flex;gap:8px;margin-top:14px;justify-content:flex-end;}
+  .alerta-box{border-radius:10px;padding:11px 13px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;}
+  .alerta-box.vermelho{background:#2d0a0a;border:1px solid #7f1d1d;}
+  .alerta-box.amarelo{background:#2a1a00;border:1px solid #78350f;}
+  .alerta-box.verde{background:#052e16;border:1px solid #14532d;}
+  .alerta-box.azul{background:#0c1a2e;border:1px solid #1e40af;}
+  .alerta-icon{font-size:1rem;}
+  .alerta-texto{font-size:0.78rem;}
+  .alerta-titulo{font-weight:700;margin-bottom:2px;}
+  .barra{height:5px;border-radius:3px;background:var(--borda);}
+  .barra-fill{height:100%;border-radius:3px;}
+  .vazio{text-align:center;padding:36px 20px;color:var(--muted);}
+  .vazio-icon{font-size:2.2rem;margin-bottom:10px;}
+  .chip{display:inline-block;font-size:0.65rem;padding:1px 6px;border-radius:10px;background:var(--card2);color:var(--muted);margin-left:4px;}
+  .chip.sem-estoque{background:#2d0a0a;color:#f87171;}
+  .filtro-bar{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:2px;}
+  .filtro-btn{padding:5px 12px;border-radius:20px;font-size:0.73rem;font-weight:600;cursor:pointer;border:1px solid var(--borda);background:var(--card2);color:var(--muted);white-space:nowrap;}
+  .filtro-btn.ativo{background:var(--accent);color:#0f172a;border-color:var(--accent);}
+  .rank-item{display:flex;align-items:center;gap:10px;padding:9px 11px;background:var(--card2);border-radius:8px;margin-bottom:6px;}
+  .compra-item{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--card2);border-radius:8px;margin-bottom:6px;}
+  .cat-economica{background:#1a2a1a;color:#86efac;border:1px solid #166534;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+  .cat-intermediaria{background:#1e2a3a;color:#93c5fd;border:1px solid #1e40af;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+  .cat-premium{background:#2a1a3a;color:#c4b5fd;border:1px solid #5b21b6;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+  .ms-otimo{color:#22c55e;font-weight:700;}
+  .ms-ok{color:#86efac;font-weight:700;}
+  .ms-baixo{color:#f59e0b;font-weight:700;}
+  .ms-perigo{color:#ef4444;font-weight:700;}
+  .ms-vazio{color:var(--muted);}
+  .sug-box{background:var(--card2);border:1px solid var(--borda);border-radius:10px;padding:12px;margin-top:10px;}
+  .sug-row{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;padding:5px 0;border-bottom:1px solid var(--borda);}
+  .sug-row:last-child{border-bottom:none;}
+
+  .alerta-promo{border-radius:10px;padding:12px 14px;margin-bottom:8px;border:1px solid var(--borda);}
+  .alerta-promo.urgente{background:#2d0a0a;border-color:#7f1d1d;}
+  .alerta-promo.hoje{background:#2a1a00;border-color:#78350f;}
+  .alerta-promo.ok{background:#0c1a2e;border-color:#1e40af;}
+  .alerta-promo.expirado{background:#1a1a1a;border-color:#334155;opacity:.6;}
+  .rel-rank-bar{height:6px;border-radius:3px;background:var(--borda);margin-top:3px;}
+  .rel-rank-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--roxo));}
+  @media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
+</style>
+<script type="module">
+// ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/12.14.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCUwyQAbJPfwZoPFiLXB1mR8517FsZbTpI",
+  authDomain: "msfarma-fraldas.firebaseapp.com",
+  projectId: "msfarma-fraldas",
+  storageBucket: "msfarma-fraldas.firebasestorage.app",
+  messagingSenderId: "139486112031",
+  appId: "1:139486112031:web:557dc895b98e0c3425e82a"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+const DOC_REF = doc(db, 'msfarma', 'fraldas');
+
+// Cache local
+window._dbCache = null;
+window._saving = false;
+
+// Carrega dados do Firebase (com fallback para localStorage)
+window.loadDB = async function() {
+  if (window._dbCache) return window._dbCache;
+  try {
+    const snap = await getDoc(DOC_REF);
+    if (snap.exists()) {
+      window._dbCache = snap.data();
+    } else {
+      // Primeiro acesso — usar dados locais ou iniciais
+      const local = localStorage.getItem('fraldas-msfarma-v2');
+      window._dbCache = local ? JSON.parse(local) : null;
+    }
+  } catch(e) {
+    console.warn('Firebase offline, usando localStorage', e);
+    const local = localStorage.getItem('fraldas-msfarma-v2');
+    window._dbCache = local ? JSON.parse(local) : null;
+  }
+  return window._dbCache;
+};
+
+// Salva no Firebase e localStorage
+window.saveDB = async function(data) {
+  window._dbCache = data;
+  localStorage.setItem('fraldas-msfarma-v2', JSON.stringify(data));
+  try {
+    await setDoc(DOC_REF, data);
+  } catch(e) {
+    console.warn('Erro ao salvar no Firebase:', e);
+  }
+};
+
+// Escuta mudanças em tempo real (quando a Adriana salvar algo)
+onSnapshot(DOC_REF, (snap) => {
+  if (snap.exists()) {
+    window._dbCache = snap.data();
+    localStorage.setItem('fraldas-msfarma-v2', JSON.stringify(window._dbCache));
+    // Re-renderiza a aba ativa
+    const abaAtiva = document.querySelector('.tab.ativo');
+    if (abaAtiva) {
+      const idx = [...document.querySelectorAll('.tab')].indexOf(abaAtiva);
+      const tabs = ['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','integracao'];
+      if (tabs[idx]) {
+        const renders = {dashboard:renderDashboard,estoque:()=>renderEstoque(),precos:()=>renderPrecos(),vendas:renderVendas,compras:renderCompras,relatorio:()=>{if(typeof initRelatorio==='function')initRelatorio();}};
+        if (renders[tabs[idx]]) renders[tabs[idx]]();
+      }
+    }
+  }
+});
+
+// Banner de status
+window.addEventListener('load', () => {
+  const banner = document.createElement('div');
+  banner.id = 'sync-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#052e16;border-top:1px solid #14532d;color:#86efac;font-size:.72rem;padding:6px 16px;text-align:center;z-index:999;display:none';
+  document.body.appendChild(banner);
+});
+
+window.showSync = function(msg, cor) {
+  const b = document.getElementById('sync-banner');
+  if (!b) return;
+  b.textContent = msg;
+  b.style.background = cor==='erro' ? '#2d0a0a' : '#052e16';
+  b.style.color = cor==='erro' ? '#fca5a5' : '#86efac';
+  b.style.borderTopColor = cor==='erro' ? '#7f1d1d' : '#14532d';
+  b.style.display = 'block';
+  setTimeout(() => b.style.display='none', 3000);
+};
+</script>
+
+</head>
+<body>
+<header>
+  <span>🍼</span>
+  <h1>Fraldas — MS Farma</h1>
+  <span class="data" id="data-hoje"></span>
+</header>
+<div class="tabs">
+  <div class="tab ativo" onclick="goTab('dashboard')">📊 Painel</div>
+  <div class="tab" onclick="goTab('estoque')">🏪 Estoque</div>
+  <div class="tab" onclick="goTab('precos')">💲 Preços</div>
+  <div class="tab" onclick="goTab('vendas')">💰 Vendas</div>
+  <div class="tab" onclick="goTab('compras')">🛒 Compras</div>
+  <div class="tab" onclick="goTab('comparador')">⚖️ Comparador</div>
+  <div class="tab" onclick="goTab('relatorio')">📊 Relatório</div>
+  <div class="tab" onclick="goTab('alertas')">🔔 Alertas</div>
+  <div class="tab" onclick="goTab('integracao')">🔗 MS Farma</div>
+</div>
+
+<div id="sec-dashboard" class="sec ativo">
+  <div id="dash-alertas"></div>
+  <div class="kpi-grid" id="dash-kpis"></div>
+  <div class="card"><div class="card-titulo">💲 Saúde das Margens</div><div id="dash-margens-saude"></div></div>
+  <div class="card"><div class="card-titulo">🚦 Situação por Marca</div><div id="dash-marcas"></div></div>
+  <div class="card"><div class="card-titulo">🔴 Urgente — Comprar Agora</div><div id="dash-urgentes"></div></div>
+</div>
+
+<div id="sec-estoque" class="sec">
+  <div class="flex-entre">
+    <div><div class="sec-title">🏪 Estoque</div><div class="sec-sub" id="est-sub"></div></div>
+    <button class="btn btn-ghost" onclick="abrirModalEstoque()">✏️ Atualizar</button>
+  </div>
+  <div class="filtro-bar" id="filtro-est"></div>
+  <div id="lista-estoque"></div>
+</div>
+
+<div id="sec-precos" class="sec">
+  <div class="flex-entre">
+    <div><div class="sec-title">💲 Preços & Margens</div><div class="sec-sub">Sugestões automáticas por categoria</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-titulo">📋 Faixas Recomendadas</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:.78rem">
+      <div style="display:flex;align-items:center;gap:10px"><span class="cat-economica">ECONÔMICA</span><span style="color:var(--muted)">Hipopó Econ., Mili</span><span style="margin-left:auto;font-weight:700;color:#86efac">12%–18%</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="cat-intermediaria">INTERMEDIÁRIA</span><span style="color:var(--muted)">Hipopó Hiper/Short., Babysec Ultra</span><span style="margin-left:auto;font-weight:700;color:#93c5fd">20%–28%</span></div>
+      <div style="display:flex;align-items:center;gap:10px"><span class="cat-premium">PREMIUM</span><span style="color:var(--muted)">Babysec Premium, Pampers</span><span style="margin-left:auto;font-weight:700;color:#c4b5fd">28%–35%</span></div>
+    </div>
+    <div style="margin-top:10px;padding:8px;background:#2d0a0a;border-radius:8px;font-size:.72rem;color:#fca5a5">⚠️ Abaixo de 12% = prejuízo real</div>
+  </div>
+  <div class="filtro-bar" id="filtro-preco"></div>
+  <div id="lista-precos"></div>
+</div>
+
+<div id="sec-vendas" class="sec">
+  <div class="flex-entre">
+    <div><div class="sec-title">💰 Vendas</div><div class="sec-sub">Registre o que vendeu</div></div>
+    <button class="btn btn-primary" onclick="abrirModalVenda()">+ Registrar</button>
+  </div>
+  <div id="lista-vendas"></div>
+</div>
+
+<div id="sec-compras" class="sec">
+  <div class="sec-title" style="margin-bottom:4px">🛒 Lista de Compras</div>
+  <div class="sec-sub" style="margin-bottom:12px">Gerada automaticamente pelo estoque</div>
+  <div id="lista-compras"></div>
+  <div class="card" style="margin-top:12px">
+    <div class="card-titulo">💵 Investimento Estimado</div>
+    <div id="total-compras" style="font-size:1.4rem;font-weight:800;color:var(--accent)">—</div>
+    <div style="font-size:.72rem;color:var(--muted);margin-top:4px">Apenas produtos com custo cadastrado</div>
+  </div>
+</div>
+
+<!-- COMPARADOR -->
+<div id="sec-comparador" class="sec">
+  <div class="sec-title" style="margin-bottom:4px">⚖️ Comparador de Compra</div>
+  <div class="sec-sub" style="margin-bottom:14px">Compare quantidades ou fornecedores antes de comprar</div>
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button id="modo-btn-qtd" class="btn btn-primary" style="flex:1;justify-content:center" onclick="setModo('qtd')">📦 Quantidade</button>
+    <button id="modo-btn-forn" class="btn btn-ghost" style="flex:1;justify-content:center" onclick="setModo('forn')">🏭 Fornecedor</button>
+  </div>
+  <div id="comp-qtd">
+    <div class="card">
+      <div class="card-titulo">📦 Comprar pouco vs muito do mesmo produto</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><label>Produto</label><select id="cq-produto"></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Opção A — Qtd pacotes</label><input type="number" id="cq-a-qtd" placeholder="Ex: 6" min="1"></div>
+          <div><label>Custo unit. A (R$)</label><input type="number" id="cq-a-custo" placeholder="0,00" step="0.01"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Opção B — Qtd pacotes</label><input type="number" id="cq-b-qtd" placeholder="Ex: 12" min="1"></div>
+          <div><label>Custo unit. B (R$)</label><input type="number" id="cq-b-custo" placeholder="0,00" step="0.01"></div>
+        </div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="calcQtd()">⚖️ Comparar</button>
+      </div>
+    </div>
+    <div id="res-qtd"></div>
+  </div>
+  <div id="comp-forn" style="display:none">
+    <div class="card">
+      <div class="card-titulo">🏭 Mesmo produto, dois fornecedores</div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div><label>Produto</label><select id="cf-produto"></select></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Fornecedor A</label><input type="text" id="cf-a-nome" placeholder="Ex: Dist. Norte"></div>
+          <div><label>Preço unit. A (R$)</label><input type="number" id="cf-a-preco" placeholder="0,00" step="0.01"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Fornecedor B</label><input type="text" id="cf-b-nome" placeholder="Ex: Dist. Sul"></div>
+          <div><label>Preço unit. B (R$)</label><input type="number" id="cf-b-preco" placeholder="0,00" step="0.01"></div>
+        </div>
+        <div><label>Quantidade que vai comprar</label><input type="number" id="cf-qtd" placeholder="Ex: 10" min="1"></div>
+        <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="calcForn()">⚖️ Comparar</button>
+      </div>
+    </div>
+    <div id="res-forn"></div>
+  </div>
+</div>
+
+
+<!-- RELATÓRIO -->
+<div id="sec-relatorio" class="sec">
+  <div class="flex-entre">
+    <div><div class="sec-title">📊 Relatório Mensal</div><div class="sec-sub" id="rel-sub"></div></div>
+    <select id="rel-mes" onchange="renderRelatorio()" style="width:auto;padding:6px 10px;font-size:.8rem"></select>
+  </div>
+  <div class="kpi-grid" id="rel-kpis"></div>
+  <div class="card"><div class="card-titulo">🏆 Ranking de Marcas</div><div id="rel-ranking"></div></div>
+  <div class="card"><div class="card-titulo">📦 Produtos que mais giraram</div><div id="rel-giro"></div></div>
+  <div class="card"><div class="card-titulo">💤 Produtos sem venda no período</div><div id="rel-parado"></div></div>
+</div>
+
+<!-- ALERTAS PROMOÇÃO -->
+<div id="sec-alertas" class="sec">
+  <div class="flex-entre">
+    <div><div class="sec-title">🔔 Alertas de Promoção</div><div class="sec-sub">Registre ofertas do representante com prazo</div></div>
+    <button class="btn btn-primary" onclick="abrirModalAlerta()">+ Nova</button>
+  </div>
+  <div id="lista-alertas"></div>
+</div>
+
+<!-- MODAL ALERTA -->
+<div class="modal-bg" id="modal-alerta">
+  <div class="modal">
+    <div class="modal-titulo">🔔 Nova Promoção</div>
+    <input type="hidden" id="alerta-id">
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><label>Produto</label><select id="alerta-produto"></select></div>
+      <div><label>Fornecedor / Representante</label><input type="text" id="alerta-forn" placeholder="Ex: Distribuidora Norte"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Preço promocional (R$)</label><input type="number" id="alerta-preco" placeholder="0,00" step="0.01"></div>
+        <div><label>Validade da oferta</label><input type="date" id="alerta-data"></div>
+      </div>
+      <div><label>Observação</label><input type="text" id="alerta-obs" placeholder="Ex: min 10 pacotes, frete grátis..."></div>
+    </div>
+    <div id="alerta-preview" style="margin-top:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-alerta')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarAlerta()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- INTEGRAÇÃO -->
+<div id="sec-integracao" class="sec">
+  <div class="sec-title" style="margin-bottom:4px">🔗 Integrar com MS Farma</div>
+  <div class="sec-sub" style="margin-bottom:14px">Exportar vendas para o fluxo de caixa principal</div>
+
+  <div class="card">
+    <div class="card-titulo">📤 Exportar vendas do mês</div>
+    <div style="font-size:.8rem;color:var(--muted);margin-bottom:12px">Gera um resumo pronto para lançar nas Saídas e Entradas do MS Farma</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+      <div><label>Mês</label><select id="integ-mes" style="width:100%"></select></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="gerarExportacao()">📋 Gerar resumo</button></div>
+    </div>
+    <div id="integ-resultado"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">ℹ️ Como funciona a integração</div>
+    <div style="font-size:.8rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--accent);font-weight:700;flex-shrink:0">1.</span><span>Registre as vendas de fraldas aqui normalmente</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--accent);font-weight:700;flex-shrink:0">2.</span><span>No final do mês (ou quando quiser), gere o resumo acima</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--accent);font-weight:700;flex-shrink:0">3.</span><span>Copie o valor total e lance como <strong style="color:var(--texto)">Entrada</strong> no MS Farma com descrição "Fraldas – [mês]"</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--accent);font-weight:700;flex-shrink:0">4.</span><span>Lance o custo total como <strong style="color:var(--texto)">Saída</strong> com descrição "Custo Fraldas – [mês]"</span></div>
+      <div style="display:flex;gap:10px;align-items:flex-start;padding:8px;background:#052e16;border-radius:8px;border:1px solid #14532d">
+        <span>💡</span><span style="color:var(--verde)">No futuro, quando o MS Farma tiver a aba de categorias, essa exportação vai ser automática.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ESTOQUE -->
+<div class="modal-bg" id="modal-estoque">
+  <div class="modal">
+    <div class="modal-titulo">🏪 Atualizar Estoque</div>
+    <div style="font-size:.73rem;color:var(--muted);margin-bottom:12px">Quantidade de pacotes em estoque</div>
+    <div id="form-estoque"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-estoque')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarEstoque()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRECO -->
+<div class="modal-bg" id="modal-preco">
+  <div class="modal">
+    <div class="modal-titulo">💲 <span id="modal-preco-titulo"></span></div>
+    <input type="hidden" id="preco-pid">
+    <div id="preco-categoria-box" style="margin-bottom:14px"></div>
+    <div class="form-grid" style="margin-bottom:12px">
+      <div><label>Custo (R$)</label><input type="number" id="preco-custo" placeholder="0,00" step="0.01" min="0"></div>
+      <div><label>Venda (R$)</label><input type="number" id="preco-venda" placeholder="0,00" step="0.01" min="0"></div>
+    </div>
+    <div id="preco-sugestao" style="display:none" class="sug-box">
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;font-weight:700">💡 SUGESTÃO DE PREÇO DE VENDA</div>
+      <div class="sug-row"><span>Mínimo (12%)</span><span id="sug-min" style="color:var(--amarelo);font-weight:700"></span></div>
+      <div class="sug-row"><span>Ideal (faixa da categoria)</span><span id="sug-ideal" style="color:var(--verde);font-weight:700"></span></div>
+      <div class="sug-row"><span>Teto competitivo</span><span id="sug-max" style="color:var(--muted)"></span></div>
+    </div>
+    <div id="preco-preview" style="margin-top:10px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-preco')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarPreco()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VENDA -->
+<div class="modal-bg" id="modal-venda">
+  <div class="modal">
+    <div class="modal-titulo">💰 Registrar Venda</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><label>Produto</label><select id="venda-produto"></select></div>
+      <div class="form-grid">
+        <div><label>Quantidade (pacotes)</label><input type="number" id="venda-qtd" placeholder="Ex: 5" min="1"></div>
+        <div><label>Período</label><select id="venda-periodo"><option value="hoje">Hoje</option><option value="semana">Esta semana</option><option value="mes">Este mês</option></select></div>
+      </div>
+      <div><label>Obs (opcional)</label><input type="text" id="venda-obs" placeholder="promoção, troca..."></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-venda')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarVenda()">Registrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY = 'fraldas-msfarma-v2';
+
+const CATEGORIAS = {
+  economica:     {label:'ECONÔMICA',    cls:'cat-economica',    min:12,ideal_min:12,ideal_max:18,teto:20},
+  intermediaria: {label:'INTERMEDIÁRIA',cls:'cat-intermediaria',min:12,ideal_min:20,ideal_max:28,teto:32},
+  premium:       {label:'PREMIUM',      cls:'cat-premium',      min:12,ideal_min:28,ideal_max:35,teto:40},
+};
+
+function getCategoria(p) {
+  const m=p.marca, l=(p.linha||'').toLowerCase();
+  if(m==='Pampers') return 'premium';
+  if(m==='Babysec'&&l.includes('premium')) return 'premium';
+  if(m==='Babysec') return 'intermediaria';
+  if(m==='Hipopó'&&(l.includes('econômica')||l.includes('economica'))) return 'economica';
+  if(m==='Hipopó') return 'intermediaria';
+  if(m==='Mili') return 'economica';
+  if(m==='MamyPoko') return 'intermediaria';
+  return 'intermediaria';
+}
+
+function statusMargem(m,catKey) {
+  const cat=CATEGORIAS[catKey];
+  if(m===null) return {cls:'ms-vazio',label:'—',emoji:''};
+  if(m<cat.min)        return {cls:'ms-perigo',label:'PREJUÍZO',emoji:'🔴'};
+  if(m<cat.ideal_min)  return {cls:'ms-baixo', label:'BAIXA',   emoji:'🟡'};
+  if(m<=cat.ideal_max) return {cls:'ms-otimo', label:'IDEAL ✓', emoji:'🟢'};
+  return                      {cls:'ms-ok',    label:'ALTA',    emoji:'🔵'};
+}
+
+// ── PRODUTOS E PREÇOS INICIAIS (da nota do representante) ─────────────────────
+const PRODUTOS_INICIAIS = [
+  {id:'h01',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:4,obs:''},
+  {id:'h02',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:4,obs:''},
+  {id:'h03',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'XG',minimo:4,obs:'Fornecedor sem estoque'},
+  {id:'h04',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'XXG',minimo:4,obs:''},
+  {id:'h05',marca:'Hipopó',linha:'Premium Jumbinho',tipo:'SHORTINHO',tam:'M',minimo:4,obs:'Fornecedor sem estoque'},
+  {id:'h06',marca:'Hipopó',linha:'Premium Jumbinho',tipo:'SHORTINHO',tam:'G',minimo:4,obs:''},
+  {id:'h07',marca:'Hipopó',linha:'Premium Jumbinho',tipo:'SHORTINHO',tam:'XG',minimo:4,obs:''},
+  {id:'h08',marca:'Hipopó',linha:'Premium Jumbinho',tipo:'SHORTINHO',tam:'XXG',minimo:4,obs:''},
+  {id:'h09',marca:'Hipopó',linha:'Econômica',tipo:'FITA',tam:'P',minimo:4,obs:''},
+  {id:'h10',marca:'Hipopó',linha:'Econômica',tipo:'FITA',tam:'M',minimo:4,obs:''},
+  {id:'h11',marca:'Hipopó',linha:'Econômica',tipo:'FITA',tam:'G',minimo:4,obs:'Fornecedor sem estoque'},
+  {id:'h12',marca:'Hipopó',linha:'Econômica',tipo:'FITA',tam:'XG',minimo:4,obs:''},
+  {id:'h13',marca:'Hipopó',linha:'Econômica',tipo:'FITA',tam:'XXG',minimo:4,obs:''},
+  {id:'h14',marca:'Hipopó',linha:'Hiper',tipo:'FITA',tam:'M',minimo:4,obs:''},
+  {id:'h15',marca:'Hipopó',linha:'Hiper',tipo:'FITA',tam:'G',minimo:4,obs:'Fornecedor sem estoque'},
+  {id:'h16',marca:'Hipopó',linha:'Hiper',tipo:'FITA',tam:'XG',minimo:4,obs:''},
+  {id:'h17',marca:'Hipopó',linha:'Hiper',tipo:'FITA',tam:'XXG',minimo:4,obs:''},
+  {id:'h18',marca:'Hipopó',linha:'Shortinho Jumbo',tipo:'SHORTINHO',tam:'M',minimo:4,obs:''},
+  {id:'h19',marca:'Hipopó',linha:'Shortinho Jumbo',tipo:'SHORTINHO',tam:'G',minimo:4,obs:'Fornecedor sem estoque'},
+  {id:'h20',marca:'Hipopó',linha:'Shortinho Jumbo',tipo:'SHORTINHO',tam:'XG',minimo:4,obs:''},
+  {id:'h21',marca:'Hipopó',linha:'Shortinho Jumbo',tipo:'SHORTINHO',tam:'XXG',minimo:4,obs:''},
+  {id:'b01',marca:'Babysec',linha:'Premium Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:3,obs:''},
+  {id:'b02',marca:'Babysec',linha:'Premium Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
+  {id:'b03',marca:'Babysec',linha:'Premium Shortinho Mega',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:'Fornecedor sem estoque'},
+  {id:'b04',marca:'Babysec',linha:'Premium Shortinho Mega',tipo:'SHORTINHO',tam:'XXG',minimo:3,obs:''},
+  {id:'b05',marca:'Babysec',linha:'Premium Shortinho Mega',tipo:'SHORTINHO',tam:'XXXG',minimo:3,obs:''},
+  {id:'b06',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'M',minimo:3,obs:''},
+  {id:'b07',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
+  {id:'b08',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:''},
+  {id:'b09',marca:'Babysec',linha:'Premium Shortinho Hiper',tipo:'SHORTINHO',tam:'XXG',minimo:3,obs:''},
+  {id:'b10',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:3,obs:''},
+  {id:'b11',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
+  {id:'b12',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:''},
+  {id:'b13',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'XXG',minimo:3,obs:''},
+  {id:'b14',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'XXXG',minimo:3,obs:''},
+  {id:'b15',marca:'Babysec',linha:'Ultrasec Mega',tipo:'FITA',tam:'M',minimo:3,obs:''},
+  {id:'b16',marca:'Babysec',linha:'Ultrasec Mega',tipo:'FITA',tam:'G',minimo:3,obs:''},
+  {id:'b17',marca:'Babysec',linha:'Ultrasec Mega',tipo:'FITA',tam:'XG',minimo:3,obs:''},
+  {id:'b18',marca:'Babysec',linha:'Ultrasec Mega',tipo:'FITA',tam:'XXG',minimo:3,obs:''},
+  {id:'b19',marca:'Babysec',linha:'Ultrasec Hiper',tipo:'FITA',tam:'P',minimo:3,obs:''},
+  {id:'b20',marca:'Babysec',linha:'Ultrasec Hiper',tipo:'FITA',tam:'M',minimo:3,obs:''},
+  {id:'b21',marca:'Babysec',linha:'Ultrasec Hiper',tipo:'FITA',tam:'G',minimo:3,obs:''},
+  {id:'b22',marca:'Babysec',linha:'Ultrasec Hiper',tipo:'FITA',tam:'XG',minimo:3,obs:'Fornecedor sem estoque'},
+  {id:'b23',marca:'Babysec',linha:'Ultrasec Hiper',tipo:'FITA',tam:'XXG',minimo:3,obs:''},
+  {id:'m01',marca:'Mili',linha:'Pants Love & Care Jumbo',tipo:'SHORTINHO',tam:'M',minimo:3,obs:''},
+  {id:'m02',marca:'Mili',linha:'Pants Love & Care Jumbo',tipo:'SHORTINHO',tam:'G',minimo:3,obs:''},
+  {id:'m03',marca:'Mili',linha:'Pants Love & Care Jumbo',tipo:'SHORTINHO',tam:'XG',minimo:3,obs:'Fornecedor sem estoque'},
+  {id:'m04',marca:'Mili',linha:'Pants Love & Care Jumbo',tipo:'SHORTINHO',tam:'XXG',minimo:3,obs:'Fornecedor sem estoque'},
+  {id:'m05',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'RN',minimo:3,obs:''},
+  {id:'m06',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'P',minimo:3,obs:''},
+  {id:'m07',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'M',minimo:3,obs:''},
+  {id:'m08',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'G',minimo:3,obs:''},
+  {id:'m09',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'XG',minimo:3,obs:''},
+  {id:'m10',marca:'Mili',linha:'Jumbo',tipo:'FITA',tam:'XXG',minimo:3,obs:''},
+  {id:'m11',marca:'Mili',linha:'Mega',tipo:'FITA',tam:'M',minimo:3,obs:''},
+  {id:'m12',marca:'Mili',linha:'Mega',tipo:'FITA',tam:'G',minimo:3,obs:''},
+  {id:'m13',marca:'Mili',linha:'Mega',tipo:'FITA',tam:'XG',minimo:3,obs:''},
+  {id:'m14',marca:'Mili',linha:'Mega',tipo:'FITA',tam:'XXG',minimo:3,obs:''},
+  {id:'p01',marca:'Pampers',linha:'Fita',tipo:'FITA',tam:'RN 4kg',minimo:3,obs:''},
+  {id:'p02',marca:'Pampers',linha:'Fita',tipo:'FITA',tam:'RN 6kg',minimo:3,obs:''},
+];
+
+const ESTOQUE_INICIAL = {
+  h01:4,h02:4,h03:0,h04:3,h05:0,h06:4,h07:8,h08:7,
+  h09:6,h10:1,h11:0,h12:2,h13:2,h14:2,h15:0,h16:3,h17:3,
+  h18:0,h19:0,h20:0,h21:0,
+  b01:2,b02:11,b03:0,b04:15,b05:6,b06:2,b07:4,b08:4,b09:4,
+  b10:3,b11:4,b12:1,b13:2,b14:0,b15:0,b16:0,b17:0,b18:0,
+  b19:0,b20:0,b21:0,b22:0,b23:0,
+  m01:0,m02:0,m03:0,m04:0,m05:0,m06:0,m07:0,m08:0,
+  m09:0,m10:0,m11:0,m12:0,m13:0,m14:0,
+  p01:0,p02:0
+};
+
+// Preços da nota do representante
+const PRECOS_INICIAIS = {
+  // Hipopó Hiper FITA
+  h14:{custo:35.69,venda:0}, // M
+  h16:{custo:35.69,venda:0}, // XG
+  h17:{custo:35.69,venda:0}, // XXG
+  // h15 G — sem preço por enquanto
+  // Hipopó Econômica FITA
+  h09:{custo:24.99,venda:0}, // P
+  h10:{custo:24.99,venda:0}, // M
+  h12:{custo:24.99,venda:0}, // XG
+  h13:{custo:24.99,venda:0}, // XXG
+  // Hipopó Shortinho Jumbo — Bag (Confort)
+  h18:{custo:45.90,venda:0}, // M Bag
+  h20:{custo:24.99,venda:0}, // XG Jumbo
+  h21:{custo:24.99,venda:0}, // XXG Jumbo
+  // Babysec Premium Shortinho Mega
+  b01:{custo:33.40,venda:0},
+  b02:{custo:33.40,venda:0},
+  b03:{custo:33.40,venda:0},
+  b04:{custo:33.40,venda:0},
+  b05:{custo:33.40,venda:0},
+  // Babysec Premium Shortinho Hiper
+  b06:{custo:33.40,venda:0},
+  b07:{custo:33.40,venda:0},
+  b08:{custo:52.90,venda:66.90}, // XG — já tinha
+  b09:{custo:52.90,venda:66.90}, // XXG — já tinha
+  // Babysec Ultrasec Hiper FITA
+  b19:{custo:57.49,venda:0}, // P
+  b21:{custo:57.49,venda:0}, // G
+  // Mili Love Care Jumbo
+  m06:{custo:26.49,venda:0}, // P
+  m09:{custo:26.49,venda:0}, // XG
+  m10:{custo:26.49,venda:0}, // XXG
+  // Mili Love Care Mega
+  m12:{custo:52.79,venda:0}, // G
+  m13:{custo:52.79,venda:0}, // XG
+  m14:{custo:52.79,venda:0}, // XXG
+  // Mili Pants Jumbo G
+  m02:{custo:40.99,venda:0}, // G
+  // Mili RN
+  m05:{custo:15.29,venda:0},
+};
+
+function load() {
+  // Versão síncrona — usa cache ou localStorage
+  if (window._dbCache) return window._dbCache;
+  const d=localStorage.getItem(KEY);
+  if(d) { window._dbCache = JSON.parse(d); return window._dbCache; }
+  const init={produtos:PRODUTOS_INICIAIS,estoques:ESTOQUE_INICIAL,vendas:[],precos:{}};
+  Object.entries(PRECOS_INICIAIS).forEach(([id,pr])=>{ init.precos[id]=pr; });
+  window._dbCache = init;
+  save(init);
+  return init;
+}
+function save(data){
+  window._dbCache = data;
+  localStorage.setItem(KEY,JSON.stringify(data));
+  if(window.saveDB) {
+    window.saveDB(data).then(()=>window.showSync&&window.showSync('✅ Sincronizado com a nuvem','ok'))
+      .catch(()=>window.showSync&&window.showSync('⚠️ Sem conexão — salvo localmente','erro'));
+  }
+}
+
+function fmt(v){return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+function pct(v){return Number(v).toFixed(1)+'%';}
+function marcaClass(m){return {Hipopó:'m-hipopo',Babysec:'m-babysec',MamyPoko:'m-mamypoko',Mili:'m-mili',Pampers:'m-pampers',Looping:'m-looping'}[m]||'m-babysec';}
+function margem(c,v){if(!c||!v)return null;return((v-c)/v)*100;}
+function statusEst(data,p){const q=data.estoques[p.id]||0;if(q===0)return 'comprar';if(q<=p.minimo)return 'atencao';return 'ok';}
+
+const TABS=['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','integracao'];
+function goTab(id){
+  document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ativo'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
+  document.getElementById('sec-'+id).classList.add('ativo');
+  document.querySelectorAll('.tab')[TABS.indexOf(id)].classList.add('ativo');
+  ({dashboard:renderDashboard,estoque:()=>renderEstoque('Todas'),precos:()=>renderPrecos('Todas'),vendas:renderVendas,compras:renderCompras,comparador:initComparador,relatorio:initRelatorio,alertas:renderAlertas,integracao:initIntegracao})[id]?.();
+}
+
+function renderDashboard(){
+  const data=load();
+  const prods=data.produtos;
+  const urgentes=prods.filter(p=>(data.estoques[p.id]||0)===0);
+  const atencao=prods.filter(p=>{const q=data.estoques[p.id]||0;return q>0&&q<=p.minimo;});
+  const ok=prods.filter(p=>(data.estoques[p.id]||0)>p.minimo);
+  const semPreco=prods.filter(p=>!data.precos[p.id]||!data.precos[p.id].custo).length;
+  let mIdeal=0,mBaixo=0,mPerigo=0,mVazio=0;
+  prods.forEach(p=>{
+    const pr=data.precos[p.id];
+    if(!pr||!pr.custo||!pr.venda){mVazio++;return;}
+    const m=margem(pr.custo,pr.venda);
+    const st=statusMargem(m,getCategoria(p));
+    if(st.label==='IDEAL ✓'||st.label==='ALTA') mIdeal++;
+    else if(st.label==='BAIXA') mBaixo++;
+    else if(st.label==='PREJUÍZO') mPerigo++;
+    else mVazio++;
+  });
+  document.getElementById('dash-kpis').innerHTML=`
+    <div class="kpi azul"><div class="kpi-val">${prods.length}</div><div class="kpi-label">SKUs ativos</div></div>
+    <div class="kpi vermelho"><div class="kpi-val">${urgentes.length}</div><div class="kpi-label">Zerados 🔴</div></div>
+    <div class="kpi amarelo"><div class="kpi-val">${atencao.length}</div><div class="kpi-label">Atenção 🟡</div></div>
+    <div class="kpi verde"><div class="kpi-val">${ok.length}</div><div class="kpi-label">OK 🟢</div></div>`;
+  let al='';
+  if(urgentes.length>0) al+=`<div class="alerta-box vermelho"><div class="alerta-icon">🔴</div><div class="alerta-texto"><div class="alerta-titulo">${urgentes.length} produtos zerados!</div>Vá em Compras para ver a lista</div></div>`;
+  if(mPerigo>0) al+=`<div class="alerta-box vermelho"><div class="alerta-icon">⚠️</div><div class="alerta-texto"><div class="alerta-titulo">${mPerigo} produto(s) com margem abaixo do mínimo!</div>Você está vendendo com prejuízo</div></div>`;
+  if(mBaixo>0) al+=`<div class="alerta-box amarelo"><div class="alerta-icon">💲</div><div class="alerta-texto"><div class="alerta-titulo">${mBaixo} produto(s) com margem baixa</div>Abaixo da faixa ideal para a categoria</div></div>`;
+  if(semPreco>0) al+=`<div class="alerta-box azul"><div class="alerta-icon">📝</div><div class="alerta-texto"><div class="alerta-titulo">${semPreco} produtos sem preço de venda</div>Preencha na aba Preços para ver as margens</div></div>`;
+
+  // Alertas de promoção vencendo
+  const hoje2 = new Date(); hoje2.setHours(0,0,0,0);
+  (data.alertas||[]).forEach(a=>{
+    const val=new Date(a.validade+'T00:00:00');
+    const diff=Math.round((val-hoje2)/(1000*60*60*24));
+    if(diff>=0&&diff<=3){
+      const p=data.produtos.find(x=>x.id===a.produtoId);
+      const nome=p?p.marca+' '+p.linha+' '+p.tam:'Produto';
+      al+=`<div class="alerta-box amarelo"><div class="alerta-icon">🔔</div><div class="alerta-texto"><div class="alerta-titulo">Promoção vencendo: ${nome}</div>${diff===0?'Vence HOJE!':'Vence em '+diff+' dia(s)'} — ${fmt(a.preco)} com ${a.forn||'fornecedor'}</div></div>`;
+    }
+  });
+  document.getElementById('dash-alertas').innerHTML=al;
+
+  const totalM=mIdeal+mBaixo+mPerigo+mVazio;
+  document.getElementById('dash-margens-saude').innerHTML=`
+    <div style="display:flex;gap:14px;flex-wrap:wrap;font-size:.78rem;margin-bottom:10px">
+      <span><span style="color:var(--verde);font-weight:700">${mIdeal}</span> <span style="color:var(--muted)">ideais</span></span>
+      <span><span style="color:var(--amarelo);font-weight:700">${mBaixo}</span> <span style="color:var(--muted)">baixas</span></span>
+      <span><span style="color:var(--vermelho);font-weight:700">${mPerigo}</span> <span style="color:var(--muted)">perigo</span></span>
+      <span><span style="color:var(--muted);font-weight:700">${mVazio}</span> <span style="color:var(--muted)">sem venda</span></span>
+    </div>
+    <div style="display:flex;height:10px;border-radius:5px;overflow:hidden;gap:1px">
+      <div style="flex:${mIdeal||0};background:var(--verde);opacity:.8"></div>
+      <div style="flex:${mBaixo||0};background:var(--amarelo);opacity:.8"></div>
+      <div style="flex:${mPerigo||0};background:var(--vermelho);opacity:.9"></div>
+      <div style="flex:${mVazio||0};background:var(--borda)"></div>
+    </div>
+    <div style="margin-top:8px;font-size:.72rem;color:var(--muted)">Preencha os preços de venda na aba Preços</div>`;
+
+  const marcas=[...new Set(prods.map(p=>p.marca))];
+  document.getElementById('dash-marcas').innerHTML=marcas.map(marca=>{
+    const mp=prods.filter(p=>p.marca===marca);
+    const mz=mp.filter(p=>(data.estoques[p.id]||0)===0).length;
+    const ma=mp.filter(p=>{const q=data.estoques[p.id]||0;return q>0&&q<=p.minimo;}).length;
+    const mok=mp.length-mz-ma;
+    return `<div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px">
+        <span class="marca-badge ${marcaClass(marca)}">${marca}</span>
+        <span style="color:var(--muted)">${mok} ok · ${ma} atenção · ${mz} zerado</span>
+      </div>
+      <div style="display:flex;height:7px;border-radius:4px;overflow:hidden;gap:1px">
+        <div style="flex:${mok};background:var(--verde);opacity:.8"></div>
+        <div style="flex:${ma};background:var(--amarelo);opacity:.8"></div>
+        <div style="flex:${mz};background:var(--vermelho);opacity:.9"></div>
+      </div></div>`;
+  }).join('');
+
+  const urg=prods.filter(p=>(data.estoques[p.id]||0)===0).slice(0,6);
+  document.getElementById('dash-urgentes').innerHTML=urg.length===0
+    ?'<div style="color:var(--verde);font-size:.82rem;padding:8px">✅ Nenhum produto zerado!</div>'
+    :urg.map(p=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--borda)">
+        <div class="dot vermelho"></div>
+        <span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span>
+        <span style="font-size:.8rem;flex:1">${p.linha} ${p.tam}</span>
+        ${p.obs?`<span class="chip sem-estoque">${p.obs}</span>`:''}
+      </div>`).join('');
+}
+
+let filtroEst='Todas';
+function renderEstoque(filtro){
+  if(filtro) filtroEst=filtro;
+  const data=load();
+  const marcas=['Todas',...new Set(data.produtos.map(p=>p.marca))];
+  document.getElementById('filtro-est').innerHTML=marcas.map(m=>`<div class="filtro-btn ${filtroEst===m?'ativo':''}" onclick="renderEstoque('${m}')">${m}</div>`).join('');
+  const prods=filtroEst==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroEst);
+  const total=prods.reduce((s,p)=>s+(data.estoques[p.id]||0),0);
+  document.getElementById('est-sub').textContent=prods.length+' produtos · '+total+' pacotes';
+  const labels={ok:'OK',atencao:'ATENÇÃO',comprar:'ZERADO'};
+  document.getElementById('lista-estoque').innerHTML=`<div style="overflow-x:auto"><table>
+    <tr><th>Produto</th><th>Tipo</th><th>Tam</th><th>Qtd</th><th>Mín</th><th>Status</th></tr>
+    ${prods.map(p=>{
+      const q=data.estoques[p.id]||0,st=statusEst(data,p);
+      return `<tr>
+        <td><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="font-size:.73rem">${p.linha}</span>${p.obs?`<span class="chip sem-estoque" title="${p.obs}">⚠️</span>`:''}</td>
+        <td style="color:var(--muted);font-size:.73rem">${p.tipo}</td>
+        <td style="font-weight:700">${p.tam}</td>
+        <td style="font-weight:700">${q}</td>
+        <td style="color:var(--muted)">${p.minimo}</td>
+        <td><span class="badge badge-${st==='ok'?'ok':st==='atencao'?'atencao':'comprar'}">${labels[st]}</span></td>
+      </tr>`;
+    }).join('')}
+  </table></div>`;
+}
+
+function abrirModalEstoque(){
+  const data=load();
+  const filtrados=filtroEst==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroEst);
+  document.getElementById('form-estoque').innerHTML=filtrados.map(p=>`
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+      <div style="flex:1;font-size:.78rem"><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="margin-left:5px">${p.linha} <strong>${p.tam}</strong></span></div>
+      <input type="number" id="est-${p.id}" value="${data.estoques[p.id]||0}" min="0" style="width:70px;text-align:center">
+    </div>`).join('');
+  document.getElementById('modal-estoque').classList.add('aberto');
+}
+
+function salvarEstoque(){
+  const data=load();
+  data.produtos.forEach(p=>{const el=document.getElementById('est-'+p.id);if(el) data.estoques[p.id]=Number(el.value)||0;});
+  save(data);fecharModal('modal-estoque');renderEstoque();
+}
+
+let filtroPreco='Todas';
+function renderPrecos(filtro){
+  if(filtro) filtroPreco=filtro;
+  const data=load();
+  const marcas=['Todas',...new Set(data.produtos.map(p=>p.marca))];
+  document.getElementById('filtro-preco').innerHTML=marcas.map(m=>`<div class="filtro-btn ${filtroPreco===m?'ativo':''}" onclick="renderPrecos('${m}')">${m}</div>`).join('');
+  const prods=filtroPreco==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroPreco);
+  document.getElementById('lista-precos').innerHTML=`<div style="overflow-x:auto"><table>
+    <tr><th>Produto</th><th>Cat.</th><th>Custo</th><th>Venda</th><th>Margem</th><th>Status</th><th></th></tr>
+    ${prods.map(p=>{
+      const pr=data.precos[p.id]||{};
+      const catKey=getCategoria(p);
+      const cat=CATEGORIAS[catKey];
+      const m=pr.custo&&pr.venda?margem(pr.custo,pr.venda):null;
+      const st=statusMargem(m,catKey);
+      const semVenda=pr.custo&&!pr.venda;
+      return `<tr>
+        <td><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="font-size:.72rem">${p.linha} <strong>${p.tam}</strong></span></td>
+        <td><span class="${cat.cls}">${cat.label}</span></td>
+        <td style="color:${pr.custo?'var(--texto)':'var(--muted)'}">${pr.custo?fmt(pr.custo):'—'}</td>
+        <td style="color:${pr.venda?'var(--texto)':semVenda?'var(--amarelo)':'var(--muted)'}">${pr.venda?fmt(pr.venda):semVenda?'⚡ definir':'—'}</td>
+        <td class="${st.cls}">${m!==null?pct(m):'—'}</td>
+        <td>${st.emoji} <span style="font-size:.68rem">${st.label}</span></td>
+        <td><button class="btn btn-ghost btn-sm" onclick="abrirModalPreco('${p.id}')">✏️</button></td>
+      </tr>`;
+    }).join('')}
+  </table></div>`;
+}
+
+function abrirModalPreco(pid){
+  const data=load();
+  const p=data.produtos.find(x=>x.id===pid);
+  const pr=data.precos[pid]||{};
+  const catKey=getCategoria(p);
+  const cat=CATEGORIAS[catKey];
+  document.getElementById('preco-pid').value=pid;
+  document.getElementById('modal-preco-titulo').textContent=p.marca+' '+p.linha+' '+p.tam;
+  document.getElementById('preco-custo').value=pr.custo||'';
+  document.getElementById('preco-venda').value=pr.venda||'';
+  document.getElementById('preco-categoria-box').innerHTML=`
+    <div style="display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--card2);border-radius:8px;font-size:.78rem">
+      <span class="${cat.cls}">${cat.label}</span>
+      <span style="color:var(--muted)">Faixa ideal:</span>
+      <span style="font-weight:700">${cat.ideal_min}%–${cat.ideal_max}%</span>
+      <span style="color:var(--vermelho);font-size:.68rem;margin-left:auto">mín. ${cat.min}%</span>
+    </div>`;
+  atualizarPrecoPreview();
+  document.getElementById('modal-preco').classList.add('aberto');
+}
+
+function atualizarPrecoPreview(){
+  const pid=document.getElementById('preco-pid').value;
+  const data=load();
+  const p=data.produtos.find(x=>x.id===pid);
+  if(!p) return;
+  const catKey=getCategoria(p);
+  const cat=CATEGORIAS[catKey];
+  const c=parseFloat(document.getElementById('preco-custo').value)||0;
+  const v=parseFloat(document.getElementById('preco-venda').value)||0;
+  const sugBox=document.getElementById('preco-sugestao');
+  if(c>0){
+    const vMin=c/(1-cat.min/100);
+    const vIdeal=c/(1-(cat.ideal_min+cat.ideal_max)/2/100);
+    const vMax=c/(1-cat.teto/100);
+    document.getElementById('sug-min').textContent=fmt(vMin);
+    document.getElementById('sug-ideal').textContent=fmt(vIdeal)+' ('+pct((cat.ideal_min+cat.ideal_max)/2)+')';
+    document.getElementById('sug-max').textContent=fmt(vMax);
+    sugBox.style.display='block';
+  } else { sugBox.style.display='none'; }
+  const el=document.getElementById('preco-preview');
+  if(c&&v){
+    const m=margem(c,v);
+    const st=statusMargem(m,catKey);
+    el.innerHTML=`<div style="padding:9px 12px;background:var(--card2);border-radius:8px;font-size:.8rem">
+      Margem atual: <strong class="${st.cls}">${pct(m)} ${st.emoji} ${st.label}</strong> · Lucro: <strong>${fmt(v-c)}</strong>/pacote
+    </div>`;
+  } else { el.innerHTML=''; }
+}
+
+document.getElementById('preco-custo').addEventListener('input',atualizarPrecoPreview);
+document.getElementById('preco-venda').addEventListener('input',atualizarPrecoPreview);
+
+function salvarPreco(){
+  const pid=document.getElementById('preco-pid').value;
+  const custo=parseFloat(document.getElementById('preco-custo').value)||0;
+  const venda=parseFloat(document.getElementById('preco-venda').value)||0;
+  const data=load();
+  if(custo||venda) data.precos[pid]={custo,venda};
+  save(data);fecharModal('modal-preco');renderPrecos();
+}
+
+function renderVendas(){
+  const data=load();
+  const el=document.getElementById('lista-vendas');
+  if(!data.vendas||data.vendas.length===0){el.innerHTML=`<div class="vazio"><div class="vazio-icon">💰</div><p>Nenhuma venda registrada ainda.</p></div>`;return;}
+  el.innerHTML=[...data.vendas].sort((a,b)=>new Date(b.data)-new Date(a.data)).map(v=>{
+    const p=data.produtos.find(x=>x.id===v.produtoId);
+    const pr=p?data.precos[p.id]||{}:{};
+    const nome=p?p.marca+' '+p.linha+' '+p.tam:'Produto removido';
+    const total=pr.venda?fmt(pr.venda*v.qtd):'—';
+    const lucro=pr.custo&&pr.venda?fmt((pr.venda-pr.custo)*v.qtd):'—';
+    const d=new Date(v.data);
+    return `<div class="card" style="display:flex;gap:10px;align-items:flex-start">
+      <div style="flex:1">
+        <div style="font-size:.83rem;font-weight:700">${nome}</div>
+        <div style="font-size:.7rem;color:var(--muted)">${d.toLocaleDateString('pt-BR')} · ${v.qtd} pacotes${v.obs?' · '+v.obs:''}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:.85rem;font-weight:700">${total}</div>
+        <div style="font-size:.7rem;color:var(--verde)">Lucro ${lucro}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="excluirVenda('${v.id}')">🗑️</button>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalVenda(){
+  const data=load();
+  document.getElementById('venda-produto').innerHTML=data.produtos.map(p=>`<option value="${p.id}">${p.marca} · ${p.linha} ${p.tam}</option>`).join('');
+  document.getElementById('venda-qtd').value='';
+  document.getElementById('venda-obs').value='';
+  document.getElementById('modal-venda').classList.add('aberto');
+}
+
+function salvarVenda(){
+  const produtoId=document.getElementById('venda-produto').value;
+  const qtd=Number(document.getElementById('venda-qtd').value);
+  const periodo=document.getElementById('venda-periodo').value;
+  const obs=document.getElementById('venda-obs').value.trim();
+  if(!qtd||qtd<=0){alert('Informe a quantidade');return;}
+  const data=load();
+  if(!data.vendas) data.vendas=[];
+  data.estoques[produtoId]=Math.max(0,(data.estoques[produtoId]||0)-qtd);
+  data.vendas.push({id:Date.now().toString(),produtoId,qtd,periodo,obs,data:new Date().toISOString()});
+  save(data);fecharModal('modal-venda');renderVendas();
+}
+
+function excluirVenda(id){
+  if(!confirm('Excluir esta venda?'))return;
+  const data=load();
+  data.vendas=data.vendas.filter(v=>v.id!==id);
+  save(data);renderVendas();
+}
+
+function renderCompras(){
+  const data=load();
+  const precisam=data.produtos.filter(p=>(data.estoques[p.id]||0)<p.minimo).sort((a,b)=>(data.estoques[a.id]||0)-(data.estoques[b.id]||0));
+  if(precisam.length===0){
+    document.getElementById('lista-compras').innerHTML=`<div class="vazio"><div class="vazio-icon">✅</div><p>Estoque OK!</p></div>`;
+    document.getElementById('total-compras').textContent='—';return;
+  }
+  let total=0;
+  document.getElementById('lista-compras').innerHTML=precisam.map(p=>{
+    const q=data.estoques[p.id]||0;
+    const repor=Math.max((p.minimo*2)-q,1);
+    const pr=data.precos[p.id]||{};
+    const custo=pr.custo?pr.custo*repor:0;
+    total+=custo;
+    const urgente=q===0;
+    return `<div class="compra-item">
+      <div style="flex:1">
+        <div style="font-size:.82rem;font-weight:700"><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> ${p.linha} <strong>${p.tam}</strong></div>
+        <div style="font-size:.7rem;color:var(--muted)">Tem: ${q} · Mín: ${p.minimo} · Repor: <strong>${repor} pct</strong>${p.obs?' · ⚠️ '+p.obs:''}</div>
+      </div>
+      <div style="text-align:right">
+        <span class="badge ${urgente?'badge-urgente':'badge-atencao'}">${urgente?'URGENTE':'ATENÇÃO'}</span>
+        ${custo?`<div style="font-size:.75rem;color:var(--accent);margin-top:3px">${fmt(custo)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  document.getElementById('total-compras').textContent=total>0?fmt(total):'— (sem preços)';
+}
+
+// ── INTEGRAÇÃO MS FARMA ───────────────────────────────────────────────────────
+function initIntegracao() {
+  const data = load();
+  const meses = new Set();
+  const agora = new Date();
+  meses.add(agora.getFullYear()+'-'+(agora.getMonth()+1).toString().padStart(2,'0'));
+  (data.vendas||[]).forEach(v=>{
+    const d=new Date(v.data);
+    meses.add(d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'));
+  });
+  const sel = document.getElementById('integ-mes');
+  const sorted = [...meses].sort().reverse();
+  sel.innerHTML = sorted.map(m=>{
+    const [y,mo]=m.split('-');
+    const nome=new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    return `<option value="${m}">${nome}</option>`;
+  }).join('');
+  document.getElementById('integ-resultado').innerHTML='';
+}
+
+function gerarExportacao() {
+  const data = load();
+  const mes = document.getElementById('integ-mes').value;
+  const [y,mo] = mes.split('-');
+  const nomeMes = new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+
+  const vendas = (data.vendas||[]).filter(v=>{
+    const d=new Date(v.data);
+    return d.getFullYear()==y && (d.getMonth()+1)==mo;
+  });
+
+  if(vendas.length===0){
+    document.getElementById('integ-resultado').innerHTML='<div style="color:var(--muted);font-size:.8rem;padding:8px">Nenhuma venda registrada neste mês.</div>';
+    return;
+  }
+
+  let fatTotal=0,custoTotal=0,lucroTotal=0,qtdTotal=0;
+  const porMarca={};
+  vendas.forEach(v=>{
+    const p=data.produtos.find(x=>x.id===v.produtoId);
+    if(!p) return;
+    const pr=data.precos[p.id]||{};
+    const fat=pr.venda?pr.venda*v.qtd:0;
+    const cus=pr.custo?pr.custo*v.qtd:0;
+    fatTotal+=fat; custoTotal+=cus; lucroTotal+=(fat-cus); qtdTotal+=v.qtd;
+    if(!porMarca[p.marca]) porMarca[p.marca]={fat:0,cus:0,qtd:0};
+    porMarca[p.marca].fat+=fat; porMarca[p.marca].cus+=cus; porMarca[p.marca].qtd+=v.qtd;
+  });
+
+  const margMedia=fatTotal>0?(lucroTotal/fatTotal)*100:0;
+
+  document.getElementById('integ-resultado').innerHTML = `
+    <div style="border:1px solid var(--borda);border-radius:10px;overflow:hidden;margin-top:4px">
+      <div style="background:var(--card2);padding:10px 12px;font-size:.72rem;font-weight:700;color:var(--muted)">RESUMO PARA LANÇAR NO MS FARMA — ${nomeMes.toUpperCase()}</div>
+
+      <div style="padding:12px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:#052e16;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">✅ LANÇAR COMO ENTRADA</div>
+            <div style="font-size:1.2rem;font-weight:800;color:var(--verde)">${fmt(fatTotal)}</div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Descrição: "Fraldas – ${nomeMes}"</div>
+          </div>
+          <div style="background:#2d0a0a;border-radius:8px;padding:10px;text-align:center">
+            <div style="font-size:.68rem;color:var(--muted);margin-bottom:3px">📤 LANÇAR COMO SAÍDA</div>
+            <div style="font-size:1.2rem;font-weight:800;color:var(--vermelho)">${fmt(custoTotal)}</div>
+            <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Descrição: "Custo Fraldas – ${nomeMes}"</div>
+          </div>
+        </div>
+
+        <div style="background:var(--card2);border-radius:8px;padding:10px;display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:.8rem;color:var(--muted)">💰 Lucro líquido fraldas</span>
+          <span style="font-size:1rem;font-weight:800;color:${lucroTotal>=0?'var(--verde)':'var(--vermelho)'}">${fmt(lucroTotal)}</span>
+        </div>
+
+        <div style="font-size:.75rem;color:var(--muted);display:flex;gap:16px;flex-wrap:wrap">
+          <span>${qtdTotal} pacotes vendidos</span>
+          <span>Margem média: ${pct(margMedia)}</span>
+        </div>
+
+        <div style="font-size:.72rem;font-weight:700;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.06em">Por marca:</div>
+        ${Object.entries(porMarca).map(([marca,d])=>`
+          <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borda)">
+            <span class="marca-badge ${marcaClass(marca)}">${marca}</span>
+            <span style="flex:1;font-size:.75rem;color:var(--muted)">${d.qtd} pct</span>
+            <span style="font-size:.78rem">Fat: <strong>${fmt(d.fat)}</strong></span>
+            <span style="font-size:.78rem;color:var(--verde)">Lucro: <strong>${fmt(d.fat-d.cus)}</strong></span>
+          </div>`).join('')}
+
+        <button class="btn btn-ghost" style="width:100%;justify-content:center;margin-top:4px" onclick="copiarResumo('${nomeMes}','${fmt(fatTotal)}','${fmt(custoTotal)}','${fmt(lucroTotal)}')">📋 Copiar resumo</button>
+      </div>
+    </div>`;
+}
+
+function copiarResumo(mes, fat, cus, luc) {
+  const txt = "FRALDAS MS FARMA — "+mes+"\n\nEntrada (vendas): "+fat+"\nSaída (custo): "+cus+"\nLucro líquido: "+luc;
+  navigator.clipboard.writeText(txt).then(()=>alert('Resumo copiado! Cole no MS Farma ou no WhatsApp.'));
+}
+
+// ── RELATÓRIO ─────────────────────────────────────────────────────────────────
+function initRelatorio() {
+  const data = load();
+  // Montar lista de meses com vendas + mês atual
+  const meses = new Set();
+  const agora = new Date();
+  meses.add(agora.getFullYear()+'-'+(agora.getMonth()+1).toString().padStart(2,'0'));
+  (data.vendas||[]).forEach(v=>{
+    const d=new Date(v.data);
+    meses.add(d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0'));
+  });
+  const sel = document.getElementById('rel-mes');
+  const sorted = [...meses].sort().reverse();
+  sel.innerHTML = sorted.map(m=>{
+    const [y,mo]=m.split('-');
+    const nome=new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+    return `<option value="${m}">${nome}</option>`;
+  }).join('');
+  renderRelatorio();
+}
+
+function renderRelatorio() {
+  const data = load();
+  const mes = document.getElementById('rel-mes').value;
+  const [y,mo] = mes.split('-');
+  const nomeMes = new Date(y,mo-1,1).toLocaleDateString('pt-BR',{month:'long',year:'numeric'});
+  document.getElementById('rel-sub').textContent = nomeMes;
+
+  const vendas = (data.vendas||[]).filter(v=>{
+    const d=new Date(v.data);
+    return d.getFullYear()==y && (d.getMonth()+1)==mo;
+  });
+
+  // KPIs
+  let fatTotal=0, lucTotal=0, qtdTotal=0;
+  const porProduto = {};
+  const porMarca = {};
+
+  vendas.forEach(v=>{
+    const p=data.produtos.find(x=>x.id===v.produtoId);
+    if(!p) return;
+    const pr=data.precos[p.id]||{};
+    const fat=pr.venda?pr.venda*v.qtd:0;
+    const luc=pr.custo&&pr.venda?(pr.venda-pr.custo)*v.qtd:0;
+    fatTotal+=fat; lucTotal+=luc; qtdTotal+=v.qtd;
+    if(!porProduto[p.id]) porProduto[p.id]={p,qtd:0,fat:0,luc:0};
+    porProduto[p.id].qtd+=v.qtd;
+    porProduto[p.id].fat+=fat;
+    porProduto[p.id].luc+=luc;
+    if(!porMarca[p.marca]) porMarca[p.marca]={qtd:0,fat:0,luc:0};
+    porMarca[p.marca].qtd+=v.qtd;
+    porMarca[p.marca].fat+=fat;
+    porMarca[p.marca].luc+=luc;
+  });
+
+  const margMedia = fatTotal>0?(lucTotal/fatTotal)*100:0;
+
+  document.getElementById('rel-kpis').innerHTML = `
+    <div class="kpi verde"><div class="kpi-val">${fmt(fatTotal)}</div><div class="kpi-label">Faturamento</div></div>
+    <div class="kpi roxo"><div class="kpi-val">${fmt(lucTotal)}</div><div class="kpi-label">Lucro bruto</div></div>
+    <div class="kpi azul"><div class="kpi-val">${qtdTotal}</div><div class="kpi-label">Pacotes vendidos</div></div>
+    <div class="kpi ${margMedia>=20?'verde':'amarelo'}"><div class="kpi-val">${pct(margMedia)}</div><div class="kpi-label">Margem média</div></div>`;
+
+  // Ranking marcas
+  const marcasSorted = Object.entries(porMarca).sort((a,b)=>b[1].fat-a[1].fat);
+  const maxFat = marcasSorted[0]?.[1]?.fat||1;
+  document.getElementById('rel-ranking').innerHTML = marcasSorted.length===0
+    ? '<div style="color:var(--muted);font-size:.8rem">Nenhuma venda registrada</div>'
+    : marcasSorted.map(([marca,d],i)=>`
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="font-size:.85rem;font-weight:800;color:var(--muted);width:18px">${i+1}</div>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:3px">
+            <span class="marca-badge ${marcaClass(marca)}">${marca}</span>
+            <span style="color:var(--muted)">${d.qtd} pct · ${fmt(d.fat)}</span>
+          </div>
+          <div class="rel-rank-bar"><div class="rel-rank-fill" style="width:${Math.round(d.fat/maxFat*100)}%"></div></div>
+        </div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--verde)">${fmt(d.luc)}</div>
+      </div>`).join('');
+
+  // Giro produtos
+  const prodsSorted = Object.values(porProduto).sort((a,b)=>b.qtd-a.qtd).slice(0,8);
+  document.getElementById('rel-giro').innerHTML = prodsSorted.length===0
+    ? '<div style="color:var(--muted);font-size:.8rem">Nenhuma venda registrada</div>'
+    : prodsSorted.map((d,i)=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--borda)">
+        <div style="font-size:.78rem;font-weight:800;color:var(--muted);width:18px">${i+1}</div>
+        <span class="marca-badge ${marcaClass(d.p.marca)}">${d.p.marca}</span>
+        <span style="font-size:.78rem;flex:1">${d.p.linha} ${d.p.tam}</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--accent)">${d.qtd} pct</span>
+        <span style="font-size:.78rem;color:var(--verde)">${fmt(d.luc)}</span>
+      </div>`).join('');
+
+  // Parados
+  const vendidosIds = new Set(Object.keys(porProduto));
+  const parados = data.produtos.filter(p=>!vendidosIds.has(p.id));
+  document.getElementById('rel-parado').innerHTML = parados.length===0
+    ? '<div style="color:var(--verde);font-size:.8rem;padding:4px">✅ Todos os produtos tiveram venda!</div>'
+    : parados.map(p=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borda)">
+        <span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span>
+        <span style="font-size:.78rem;flex:1;color:var(--muted)">${p.linha} ${p.tam}</span>
+        <span style="font-size:.7rem;color:var(--muted)">${data.estoques[p.id]||0} em estoque</span>
+      </div>`).join('');
+}
+
+// ── ALERTAS PROMOÇÃO ──────────────────────────────────────────────────────────
+function renderAlertas() {
+  const data = load();
+  const alertas = (data.alertas||[]).sort((a,b)=>new Date(a.validade)-new Date(b.validade));
+  const el = document.getElementById('lista-alertas');
+  if(alertas.length===0){
+    el.innerHTML=`<div class="vazio"><div class="vazio-icon">🔔</div><p>Nenhuma promoção cadastrada.<br>Registre quando o representante oferecer desconto.</p></div>`;
+    return;
+  }
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
+  el.innerHTML = alertas.map(a=>{
+    const p = data.produtos.find(x=>x.id===a.produtoId);
+    const pr = data.precos[a.produtoId]||{};
+    const nome = p ? p.marca+' '+p.linha+' '+p.tam : 'Produto';
+    const val = new Date(a.validade+'T00:00:00');
+    const diffDias = Math.round((val-hoje)/(1000*60*60*24));
+    let cls='ok', statusTxt='', emoji='🔵';
+    if(diffDias<0){cls='expirado';statusTxt='Expirada';emoji='⚫';}
+    else if(diffDias===0){cls='hoje';statusTxt='Vence HOJE!';emoji='🟡';}
+    else if(diffDias<=3){cls='urgente';statusTxt=`Vence em ${diffDias}d`;emoji='🔴';}
+    else{statusTxt=`${diffDias} dias restantes`;emoji='🔵';}
+    const economia = pr.custo&&a.preco ? fmt(pr.custo-a.preco)+' mais barato' : '';
+    const mProm = pr.venda&&a.preco ? margem(a.preco,pr.venda) : null;
+    const catKey = p?getCategoria(p):'intermediaria';
+    const stMarg = statusMargem(mProm,catKey);
+    return `<div class="alerta-promo ${cls}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">
+        <div style="flex:1">
+          <div style="font-size:.85rem;font-weight:700">${emoji} ${nome}</div>
+          <div style="font-size:.72rem;color:var(--muted);margin-top:2px">${a.forn||'Fornecedor não informado'}</div>
+          <div style="display:flex;gap:12px;margin-top:8px;flex-wrap:wrap">
+            <div><div style="font-size:.65rem;color:var(--muted)">Preço promo</div><div style="font-weight:700;color:var(--accent)">${fmt(a.preco)}</div></div>
+            ${pr.custo?`<div><div style="font-size:.65rem;color:var(--muted)">Custo normal</div><div style="font-weight:700">${fmt(pr.custo)}</div></div>`:''}
+            ${economia?`<div><div style="font-size:.65rem;color:var(--muted)">Economia</div><div style="font-weight:700;color:var(--verde)">${economia}</div></div>`:''}
+            ${mProm!==null?`<div><div style="font-size:.65rem;color:var(--muted)">Margem</div><div class="${stMarg.cls}">${pct(mProm)}</div></div>`:''}
+          </div>
+          ${a.obs?`<div style="font-size:.72rem;color:var(--muted);margin-top:6px">📝 ${a.obs}</div>`:''}
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:.7rem;font-weight:700;color:${diffDias<=0?'var(--vermelho)':diffDias<=3?'var(--amarelo)':'var(--muted)'}">${statusTxt}</div>
+          <div style="font-size:.68rem;color:var(--muted)">${val.toLocaleDateString('pt-BR')}</div>
+          <button class="btn btn-danger btn-sm" style="margin-top:6px" onclick="excluirAlerta('${a.id}')">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function abrirModalAlerta() {
+  const data = load();
+  document.getElementById('alerta-produto').innerHTML = data.produtos.map(p=>`<option value="${p.id}">${p.marca} · ${p.linha} ${p.tam}</option>`).join('');
+  document.getElementById('alerta-id').value='';
+  document.getElementById('alerta-forn').value='';
+  document.getElementById('alerta-preco').value='';
+  document.getElementById('alerta-obs').value='';
+  // default: 7 dias
+  const d=new Date(); d.setDate(d.getDate()+7);
+  document.getElementById('alerta-data').value=d.toISOString().split('T')[0];
+  document.getElementById('alerta-preview').innerHTML='';
+  document.getElementById('alerta-produto').addEventListener('change',atualizarAlertaPreview);
+  document.getElementById('alerta-preco').addEventListener('input',atualizarAlertaPreview);
+  document.getElementById('modal-alerta').classList.add('aberto');
+}
+
+function atualizarAlertaPreview() {
+  const data=load();
+  const pid=document.getElementById('alerta-produto').value;
+  const p=data.produtos.find(x=>x.id===pid);
+  const pr=data.precos[pid]||{};
+  const preco=parseFloat(document.getElementById('alerta-preco').value)||0;
+  const el=document.getElementById('alerta-preview');
+  if(!preco||!p){el.innerHTML='';return;}
+  const catKey=getCategoria(p);
+  const mProm=pr.venda?margem(preco,pr.venda):null;
+  const stMarg=statusMargem(mProm,catKey);
+  const economia=pr.custo?fmt(pr.custo-preco)+' mais barato que o normal':'';
+  el.innerHTML=`<div style="padding:9px 12px;background:var(--card2);border-radius:8px;font-size:.8rem">
+    ${economia?`💰 ${economia}<br>`:''}
+    ${mProm!==null?`Margem com esse preço: <strong class="${stMarg.cls}">${pct(mProm)} ${stMarg.emoji} ${stMarg.label}</strong>`:'Cadastre o preço de venda para ver a margem'}
+  </div>`;
+}
+
+function salvarAlerta() {
+  const produtoId=document.getElementById('alerta-produto').value;
+  const forn=document.getElementById('alerta-forn').value.trim();
+  const preco=parseFloat(document.getElementById('alerta-preco').value)||0;
+  const validade=document.getElementById('alerta-data').value;
+  const obs=document.getElementById('alerta-obs').value.trim();
+  if(!preco||!validade){alert('Preencha o preço e a validade');return;}
+  const data=load();
+  if(!data.alertas) data.alertas=[];
+  data.alertas.push({id:Date.now().toString(),produtoId,forn,preco,validade,obs});
+  save(data);fecharModal('modal-alerta');renderAlertas();
+}
+
+function excluirAlerta(id) {
+  if(!confirm('Excluir esta promoção?'))return;
+  const data=load();
+  data.alertas=(data.alertas||[]).filter(a=>a.id!==id);
+  save(data);renderAlertas();
+}
+
+// ── COMPARADOR ────────────────────────────────────────────────────────────────
+function initComparador() {
+  const data = load();
+  const opts = data.produtos.map(p=>`<option value="${p.id}">${p.marca} · ${p.linha} ${p.tam}</option>`).join('');
+  document.getElementById('cq-produto').innerHTML = opts;
+  document.getElementById('cf-produto').innerHTML = opts;
+  // preenche custo atual do produto selecionado
+  preencherCustoAtual('cq-produto','cq-a-custo');
+  preencherCustoAtual('cf-produto','cf-a-preco');
+  document.getElementById('cq-produto').addEventListener('change',()=>preencherCustoAtual('cq-produto','cq-a-custo'));
+  document.getElementById('cf-produto').addEventListener('change',()=>preencherCustoAtual('cf-produto','cf-a-preco'));
+}
+
+function preencherCustoAtual(selId, inputId) {
+  const data = load();
+  const pid = document.getElementById(selId).value;
+  const pr = data.precos[pid]||{};
+  if(pr.custo) document.getElementById(inputId).value = pr.custo;
+}
+
+function setModo(modo) {
+  const isQtd = modo==='qtd';
+  document.getElementById('comp-qtd').style.display = isQtd?'block':'none';
+  document.getElementById('comp-forn').style.display = isQtd?'none':'block';
+  document.getElementById('modo-btn-qtd').className = 'btn '+(isQtd?'btn-primary':'btn-ghost');
+  document.getElementById('modo-btn-forn').className = 'btn '+(isQtd?'btn-ghost':'btn-primary');
+  document.getElementById('modo-btn-qtd').style = 'flex:1;justify-content:center';
+  document.getElementById('modo-btn-forn').style = 'flex:1;justify-content:center';
+}
+
+function calcQtd() {
+  const data = load();
+  const pid = document.getElementById('cq-produto').value;
+  const p = data.produtos.find(x=>x.id===pid);
+  const pr = data.precos[pid]||{};
+  const aqtd = Number(document.getElementById('cq-a-qtd').value)||0;
+  const acusto = parseFloat(document.getElementById('cq-a-custo').value)||0;
+  const bqtd = Number(document.getElementById('cq-b-qtd').value)||0;
+  const bcusto = parseFloat(document.getElementById('cq-b-custo').value)||0;
+  if(!aqtd||!acusto||!bqtd||!bcusto){alert('Preencha todos os campos');return;}
+  const venda = pr.venda||0;
+  const catKey = getCategoria(p);
+
+  const totalA = aqtd*acusto, totalB = bqtd*bcusto;
+  const mA = venda?margem(acusto,venda):null;
+  const mB = venda?margem(bcusto,venda):null;
+  const lucroA = venda?(venda-acusto)*aqtd:null;
+  const lucroB = venda?(venda-bcusto)*bqtd:null;
+  const stA = statusMargem(mA,catKey);
+  const stB = statusMargem(mB,catKey);
+
+  const economiaTotal = totalA - totalB;
+  const economiaPct = ((acusto-bcusto)/acusto*100);
+  const vencedor = bcusto < acusto ? 'B' : acusto < bcusto ? 'A' : 'EMPATE';
+
+  const nome = p.marca+' '+p.linha+' '+p.tam;
+
+  document.getElementById('res-qtd').innerHTML = `
+    <div class="card" style="margin-top:0">
+      <div class="card-titulo">📊 RESULTADO — ${nome}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:var(--card2);border-radius:10px;padding:12px;border:2px solid ${vencedor==='A'?'var(--verde)':'var(--borda)'}">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px;font-weight:700">OPÇÃO A</div>
+          <div style="font-size:.82rem"><strong>${aqtd} pacotes</strong></div>
+          <div style="font-size:.82rem">Custo unit: <strong>${fmt(acusto)}</strong></div>
+          <div style="font-size:.82rem">Total: <strong>${fmt(totalA)}</strong></div>
+          ${mA!==null?`<div style="font-size:.78rem;margin-top:6px">Margem: <strong class="${stA.cls}">${pct(mA)} ${stA.emoji}</strong></div>`:''}
+          ${lucroA!==null?`<div style="font-size:.78rem">Lucro total: <strong style="color:var(--verde)">${fmt(lucroA)}</strong></div>`:''}
+          ${vencedor==='A'?'<div style="font-size:.72rem;color:var(--verde);font-weight:700;margin-top:6px">✅ MAIS BARATO</div>':''}
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:12px;border:2px solid ${vencedor==='B'?'var(--verde)':'var(--borda)'}">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px;font-weight:700">OPÇÃO B</div>
+          <div style="font-size:.82rem"><strong>${bqtd} pacotes</strong></div>
+          <div style="font-size:.82rem">Custo unit: <strong>${fmt(bcusto)}</strong></div>
+          <div style="font-size:.82rem">Total: <strong>${fmt(totalB)}</strong></div>
+          ${mB!==null?`<div style="font-size:.78rem;margin-top:6px">Margem: <strong class="${stB.cls}">${pct(mB)} ${stB.emoji}</strong></div>`:''}
+          ${lucroB!==null?`<div style="font-size:.78rem">Lucro total: <strong style="color:var(--verde)">${fmt(lucroB)}</strong></div>`:''}
+          ${vencedor==='B'?'<div style="font-size:.72rem;color:var(--verde);font-weight:700;margin-top:6px">✅ MAIS BARATO</div>':''}
+        </div>
+      </div>
+      ${vencedor!=='EMPATE'?`
+      <div style="background:${vencedor==='B'&&bcusto<acusto?'#052e16':'#052e16'};border:1px solid #14532d;border-radius:8px;padding:10px;font-size:.8rem">
+        💡 <strong>Opção ${vencedor} é mais vantajosa</strong>${Math.abs(economiaPct)>0?` — custo ${Math.abs(economiaPct).toFixed(1)}% ${bcusto<acusto?'menor':'maior'} por pacote`:''}
+        ${Math.abs(economiaTotal)>0?`<br>Diferença total: <strong>${fmt(Math.abs(economiaTotal))}</strong>`:''}
+        ${lucroA!==null&&lucroB!==null?`<br>Diferença de lucro: <strong>${fmt(Math.abs(lucroA-lucroB))}</strong>`:''}
+      </div>`:'<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:8px">Custos iguais — sem diferença</div>'}
+    </div>`;
+}
+
+function calcForn() {
+  const data = load();
+  const pid = document.getElementById('cf-produto').value;
+  const p = data.produtos.find(x=>x.id===pid);
+  const pr = data.precos[pid]||{};
+  const aNome = document.getElementById('cf-a-nome').value||'Fornecedor A';
+  const aPreco = parseFloat(document.getElementById('cf-a-preco').value)||0;
+  const bNome = document.getElementById('cf-b-nome').value||'Fornecedor B';
+  const bPreco = parseFloat(document.getElementById('cf-b-preco').value)||0;
+  const qtd = Number(document.getElementById('cf-qtd').value)||0;
+  if(!aPreco||!bPreco||!qtd){alert('Preencha todos os campos');return;}
+  const venda = pr.venda||0;
+  const catKey = getCategoria(p);
+
+  const totalA = aPreco*qtd, totalB = bPreco*qtd;
+  const mA = venda?margem(aPreco,venda):null;
+  const mB = venda?margem(bPreco,venda):null;
+  const lucroA = venda?(venda-aPreco)*qtd:null;
+  const lucroB = venda?(venda-bPreco)*qtd:null;
+  const stA = statusMargem(mA,catKey);
+  const stB = statusMargem(mB,catKey);
+  const vencedor = aPreco<bPreco?'A':bPreco<aPreco?'B':'EMPATE';
+  const economia = Math.abs(totalA-totalB);
+  const nome = p.marca+' '+p.linha+' '+p.tam;
+
+  document.getElementById('res-forn').innerHTML = `
+    <div class="card" style="margin-top:0">
+      <div class="card-titulo">📊 RESULTADO — ${nome} · ${qtd} pacotes</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+        <div style="background:var(--card2);border-radius:10px;padding:12px;border:2px solid ${vencedor==='A'?'var(--verde)':'var(--borda)'}">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px;font-weight:700">${aNome.toUpperCase()}</div>
+          <div style="font-size:.9rem;font-weight:800">${fmt(aPreco)}<span style="font-size:.7rem;color:var(--muted)">/pct</span></div>
+          <div style="font-size:.82rem">Total: <strong>${fmt(totalA)}</strong></div>
+          ${mA!==null?`<div style="font-size:.78rem;margin-top:6px">Margem: <strong class="${stA.cls}">${pct(mA)} ${stA.emoji}</strong></div>`:''}
+          ${lucroA!==null?`<div style="font-size:.78rem">Lucro: <strong style="color:var(--verde)">${fmt(lucroA)}</strong></div>`:''}
+          ${vencedor==='A'?'<div style="font-size:.72rem;color:var(--verde);font-weight:700;margin-top:6px">✅ MAIS BARATO</div>':''}
+        </div>
+        <div style="background:var(--card2);border-radius:10px;padding:12px;border:2px solid ${vencedor==='B'?'var(--verde)':'var(--borda)'}">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:6px;font-weight:700">${bNome.toUpperCase()}</div>
+          <div style="font-size:.9rem;font-weight:800">${fmt(bPreco)}<span style="font-size:.7rem;color:var(--muted)">/pct</span></div>
+          <div style="font-size:.82rem">Total: <strong>${fmt(totalB)}</strong></div>
+          ${mB!==null?`<div style="font-size:.78rem;margin-top:6px">Margem: <strong class="${stB.cls}">${pct(mB)} ${stB.emoji}</strong></div>`:''}
+          ${lucroB!==null?`<div style="font-size:.78rem">Lucro: <strong style="color:var(--verde)">${fmt(lucroB)}</strong></div>`:''}
+          ${vencedor==='B'?'<div style="font-size:.72rem;color:var(--verde);font-weight:700;margin-top:6px">✅ MAIS BARATO</div>':''}
+        </div>
+      </div>
+      ${vencedor!=='EMPATE'?`
+      <div style="background:#052e16;border:1px solid #14532d;border-radius:8px;padding:10px;font-size:.8rem">
+        💡 <strong>${vencedor==='A'?aNome:bNome} é mais barato</strong>
+        <br>Economia de <strong>${fmt(economia)}</strong> nessa compra de ${qtd} pacotes
+        ${lucroA!==null&&lucroB!==null?`<br>Diferença de lucro: <strong>${fmt(Math.abs(lucroA-lucroB))}</strong>`:''}
+      </div>`:'<div style="text-align:center;color:var(--muted);font-size:.8rem;padding:8px">Preços iguais nos dois fornecedores</div>'}
+    </div>`;
+}
+
+function fecharModal(id){document.getElementById(id).classList.remove('aberto');}
+document.querySelectorAll('.modal-bg').forEach(m=>{m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('aberto');});});
+
+document.getElementById('data-hoje').textContent=new Date().toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'short'});
+
+// Carrega do Firebase antes de renderizar
+if (window.loadDB) {
+  window.loadDB().then(data => {
+    if (data) window._dbCache = data;
+    else {
+      // Inicializa com dados padrão
+      const init={produtos:PRODUTOS_INICIAIS,estoques:ESTOQUE_INICIAL,vendas:[],precos:{}};
+      Object.entries(PRECOS_INICIAIS).forEach(([id,pr])=>{ init.precos[id]=pr; });
+      window._dbCache = init;
+      save(init);
+    }
+    renderDashboard();
+  }).catch(() => renderDashboard());
+} else {
+  renderDashboard();
+}
+</script>
+</body>
+</html>
