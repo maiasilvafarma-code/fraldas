@@ -501,7 +501,7 @@ window.showSync = function(msg, cor) {
 </div>
 
 <script>
-const KEY = 'fraldas-msfarma-v4';
+const KEY = 'fraldas-msfarma-v3';
 
 const CATEGORIAS = {
   economica:     {label:'ECONÔMICA',    cls:'cat-economica',    min:12,ideal_min:12,ideal_max:18,teto:20},
@@ -709,12 +709,40 @@ function load() {
   // Versão síncrona — usa cache ou localStorage
   if (window._dbCache) return window._dbCache;
   const d=localStorage.getItem(KEY);
-  if(d) { window._dbCache = JSON.parse(d); return window._dbCache; }
+  if(d) {
+    let cached = JSON.parse(d);
+    // Migração: adicionar produtos novos que não existem ainda
+    cached = migrarDados(cached);
+    window._dbCache = cached;
+    return window._dbCache;
+  }
   const init={produtos:PRODUTOS_INICIAIS,estoques:ESTOQUE_INICIAL,vendas:[],precos:{}};
   Object.entries(PRECOS_INICIAIS).forEach(([id,pr])=>{ init.precos[id]=pr; });
   window._dbCache = init;
   save(init);
   return init;
+}
+
+function migrarDados(data) {
+  // Garante que todos os produtos do PRODUTOS_INICIAIS existem
+  const idsExistentes = new Set((data.produtos||[]).map(p=>p.id));
+  PRODUTOS_INICIAIS.forEach(p => {
+    if (!idsExistentes.has(p.id)) {
+      data.produtos = data.produtos || [];
+      data.produtos.push(p);
+      data.estoques = data.estoques || {};
+      data.estoques[p.id] = ESTOQUE_INICIAL[p.id] || 0;
+    }
+  });
+  // Garante campo secao em todos os produtos
+  data.produtos = data.produtos.map(p => {
+    if (!p.secao) {
+      const geris = ['g01','g02','g03','g04','g05','g06','g07','g08','g09'];
+      p.secao = geris.includes(p.id) ? 'geriatrica' : 'infantil';
+    }
+    return p;
+  });
+  return data;
 }
 function save(data){
   window._dbCache = data;
