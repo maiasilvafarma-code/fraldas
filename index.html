@@ -236,6 +236,7 @@ window.showSync = function(msg, cor) {
   <div class="tab" onclick="goTab('vendas')">💰 Vendas</div>
   <div class="tab" onclick="goTab('compras')">🛒 Compras</div>
   <div class="tab" onclick="goTab('comparador')">⚖️ Comparador</div>
+  <div class="tab" onclick="goTab('mix')">🎯 Mix Ideal</div>
   <div class="tab" onclick="goTab('relatorio')">📊 Relatório</div>
   <div class="tab" onclick="goTab('alertas')">🔔 Alertas</div>
   <div class="tab" onclick="goTab('importar')">📥 Importar</div>
@@ -472,6 +473,47 @@ window.showSync = function(msg, cor) {
     <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px" onclick="confirmarImportacao()">
       ✅ Confirmar e importar vendas
     </button>
+  </div>
+</div>
+
+
+<!-- MIX IDEAL -->
+<div id="sec-mix" class="sec">
+  <div class="sec-title" style="margin-bottom:4px">🎯 Mix Ideal de Compra</div>
+  <div class="sec-sub" style="margin-bottom:14px">Descubra onde investir seu dinheiro para máximo retorno</div>
+
+  <div class="card">
+    <div class="card-titulo">💵 Quanto você tem para comprar?</div>
+    <div style="display:flex;gap:10px;align-items:flex-end">
+      <div style="flex:1">
+        <label>Capital disponível (R$)</label>
+        <input type="number" id="mix-capital" placeholder="Ex: 2000" step="100" min="0">
+      </div>
+      <button class="btn btn-primary" onclick="calcularMix()">🎯 Calcular</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <div class="filtro-btn" onclick="document.getElementById('mix-capital').value=1000;calcularMix()">R$ 1.000</div>
+      <div class="filtro-btn" onclick="document.getElementById('mix-capital').value=2000;calcularMix()">R$ 2.000</div>
+      <div class="filtro-btn" onclick="document.getElementById('mix-capital').value=3000;calcularMix()">R$ 3.000</div>
+      <div class="filtro-btn" onclick="document.getElementById('mix-capital').value=5000;calcularMix()">R$ 5.000</div>
+    </div>
+  </div>
+
+  <div id="mix-resultado" style="display:none">
+    <div class="card">
+      <div class="card-titulo">📊 Resumo do Mix</div>
+      <div id="mix-resumo" class="kpi-grid" style="margin-bottom:0"></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">🏆 Ordem de prioridade de compra</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px">Ordenado por: giro × margem (maior retorno por real investido)</div>
+      <div id="mix-lista"></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">💤 Fora do mix — baixo retorno</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px">Produtos com giro lento ou margem baixa — compre por último</div>
+      <div id="mix-fora"></div>
+    </div>
   </div>
 </div>
 
@@ -777,13 +819,13 @@ function marcaClass(m){return {Hipopó:'m-hipopo',Babysec:'m-babysec',MamyPoko:'
 function margem(c,v){if(!c||!v)return null;return((v-c)/v)*100;}
 function statusEst(data,p){const q=data.estoques[p.id]||0;if(q===0)return 'comprar';if(q<=p.minimo)return 'atencao';return 'ok';}
 
-const TABS=['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','importar','integracao'];
+const TABS=['dashboard','estoque','precos','vendas','compras','comparador','mix','relatorio','alertas','importar','integracao'];
 function goTab(id){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('ativo'));
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('ativo'));
   document.getElementById('sec-'+id).classList.add('ativo');
   document.querySelectorAll('.tab')[TABS.indexOf(id)].classList.add('ativo');
-  ({dashboard:renderDashboard,estoque:()=>renderEstoque('Todas'),precos:()=>renderPrecos('Todas'),vendas:renderVendas,compras:renderCompras,comparador:initComparador,relatorio:initRelatorio,alertas:renderAlertas,importar:()=>{},integracao:initIntegracao})[id]?.();
+  ({dashboard:renderDashboard,estoque:()=>renderEstoque('Todas'),precos:()=>renderPrecos('Todas'),vendas:renderVendas,compras:renderCompras,comparador:initComparador,mix:()=>{},relatorio:initRelatorio,alertas:renderAlertas,importar:()=>{},integracao:initIntegracao})[id]?.();
 }
 
 function renderDashboard(){
@@ -1162,6 +1204,122 @@ function renderCompras(){
     </div>`;
   }).join('');
   document.getElementById('total-compras').textContent=total>0?fmt(total):'— (sem preços)';
+}
+
+// ── MIX IDEAL ─────────────────────────────────────────────────────────────────
+function calcularMix() {
+  const capital = parseFloat(document.getElementById('mix-capital').value)||0;
+  if (!capital || capital <= 0) { alert('Informe o capital disponível'); return; }
+
+  const data = load();
+  const prods = data.produtos;
+
+  // Calcula score de cada produto: giro × margem
+  const scores = prods.map(p => {
+    const pr = data.precos[p.id]||{};
+    const giro = calcularGiro(data, p.id);
+    const q = data.estoques[p.id]||0;
+    const m = pr.custo && pr.venda ? margem(pr.custo, pr.venda) : null;
+    const minIdeal = minimoInteligente(data, p);
+    const precisaRepor = q < minIdeal;
+    const qtdRepor = Math.max(minIdeal * 2 - q, 0);
+    const custoRepor = pr.custo ? pr.custo * qtdRepor : null;
+
+    // Score = giro mensal × (margem/100) — quanto mais gira e mais margem, maior o score
+    const giroVal = giro ? giro.mediasMensal : 0;
+    const margemVal = m ? m / 100 : 0;
+    const score = giroVal * (1 + margemVal); // giro ponderado pela margem
+
+    return { p, pr, giro, m, q, minIdeal, precisaRepor, qtdRepor, custoRepor, score };
+  }).filter(x => x.pr.custo); // só produtos com custo cadastrado
+
+  // Ordena por score (maior primeiro)
+  scores.sort((a, b) => b.score - a.score);
+
+  // Simula compra dentro do capital
+  let capitalRestante = capital;
+  let totalInvestido = 0;
+  let totalLucroEstimado = 0;
+  let qtdProdutos = 0;
+
+  const noMix = [];
+  const foraMix = [];
+
+  scores.forEach(x => {
+    if (x.score === 0 || !x.precisaRepor || !x.custoRepor || x.custoRepor === 0) {
+      foraMix.push(x);
+      return;
+    }
+    if (x.custoRepor <= capitalRestante) {
+      capitalRestante -= x.custoRepor;
+      totalInvestido += x.custoRepor;
+      const lucroEst = x.pr.venda ? (x.pr.venda - x.pr.custo) * x.qtdRepor : 0;
+      totalLucroEstimado += lucroEst;
+      qtdProdutos++;
+      noMix.push({...x, alocado: x.custoRepor, lucroEst});
+    } else if (capitalRestante > 0 && x.pr.custo) {
+      // Compra parcial
+      const qtdParcial = Math.floor(capitalRestante / x.pr.custo);
+      if (qtdParcial > 0) {
+        const custoParcial = qtdParcial * x.pr.custo;
+        capitalRestante -= custoParcial;
+        totalInvestido += custoParcial;
+        const lucroEst = x.pr.venda ? (x.pr.venda - x.pr.custo) * qtdParcial : 0;
+        totalLucroEstimado += lucroEst;
+        qtdProdutos++;
+        noMix.push({...x, qtdRepor: qtdParcial, alocado: custoParcial, lucroEst, parcial: true});
+      }
+    } else {
+      foraMix.push(x);
+    }
+  });
+
+  // Produtos sem necessidade de repor mas com capital sobrando
+  scores.filter(x=>!x.precisaRepor&&x.score>0).forEach(x=>foraMix.push(x));
+
+  // Renderizar resumo
+  document.getElementById('mix-resumo').innerHTML = `
+    <div class="kpi verde"><div class="kpi-val">${fmt(totalInvestido)}</div><div class="kpi-label">Total alocado</div></div>
+    <div class="kpi amarelo"><div class="kpi-val">${fmt(capitalRestante)}</div><div class="kpi-label">Sobra</div></div>
+    <div class="kpi roxo"><div class="kpi-val">${fmt(totalLucroEstimado)}</div><div class="kpi-label">Lucro estimado</div></div>
+    <div class="kpi azul"><div class="kpi-val">${qtdProdutos}</div><div class="kpi-label">Produtos</div></div>
+  `;
+
+  // Lista do mix
+  document.getElementById('mix-lista').innerHTML = noMix.length === 0
+    ? '<div style="color:var(--muted);font-size:.8rem">Nenhum produto precisa de reposição agora ou falta custo cadastrado</div>'
+    : noMix.map((x, i) => {
+        const catKey = getCategoria(x.p);
+        const cat = CATEGORIAS[catKey];
+        const stMarg = statusMargem(x.m, catKey);
+        return `<div style="padding:10px 0;border-bottom:1px solid var(--borda)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+            <div style="font-weight:800;color:var(--accent);width:20px">${i+1}</div>
+            <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+            <span style="font-size:.78rem;font-weight:700;flex:1">${x.p.linha} ${x.p.tam}</span>
+            <span style="font-size:.8rem;font-weight:800;color:var(--verde)">${fmt(x.alocado)}</span>
+          </div>
+          <div style="display:flex;gap:12px;font-size:.7rem;color:var(--muted);padding-left:28px;flex-wrap:wrap">
+            <span>Comprar: <strong style="color:var(--texto)">${x.qtdRepor} pct${x.parcial?' (parcial)':''}</strong></span>
+            <span>Giro: <strong style="color:var(--accent)">${x.giro?x.giro.mediasMensal+'/mês':'—'}</strong></span>
+            <span>Margem: <strong class="${stMarg.cls}">${x.m?pct(x.m):'—'}</strong></span>
+            <span>Lucro est.: <strong style="color:var(--verde)">${fmt(x.lucroEst)}</strong></span>
+          </div>
+        </div>`;
+      }).join('');
+
+  // Fora do mix
+  const foraMixFiltrado = foraMix.filter((x,i,arr)=>arr.findIndex(y=>y.p.id===x.p.id)===i).slice(0,5);
+  document.getElementById('mix-fora').innerHTML = foraMixFiltrado.length === 0
+    ? '<div style="color:var(--verde);font-size:.8rem">Todos os produtos têm boa prioridade!</div>'
+    : foraMixFiltrado.map(x=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borda)">
+        <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+        <span style="font-size:.75rem;flex:1;color:var(--muted)">${x.p.linha} ${x.p.tam}</span>
+        <span style="font-size:.7rem;color:var(--muted)">${x.score===0?'sem giro':!x.precisaRepor?'estoque ok':!x.custoRepor?'sem custo':'capital insuficiente'}</span>
+      </div>`).join('');
+
+  document.getElementById('mix-resultado').style.display = 'block';
 }
 
 // ── GIRO INTELIGENTE ──────────────────────────────────────────────────────────
