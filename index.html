@@ -249,6 +249,7 @@ window.showSync = function(msg, cor) {
   <div class="card"><div class="card-titulo">🚦 Situação por Marca</div><div id="dash-marcas"></div></div>
   <div class="card"><div class="card-titulo">🔴 Urgente — Comprar Agora</div><div id="dash-urgentes"></div></div>
   <div class="card"><div class="card-titulo">📈 Top Giro — Mais vendidos</div><div id="dash-top-giro"></div></div>
+  <div class="card"><div class="card-titulo">💸 Capital Parado — Estoque encalhado</div><div id="dash-capital-parado"></div></div>
 </div>
 
 <div id="sec-estoque" class="sec">
@@ -811,6 +812,14 @@ function renderDashboard(){
   let al='';
   if(urgentes.length>0) al+=`<div class="alerta-box vermelho"><div class="alerta-icon">🔴</div><div class="alerta-texto"><div class="alerta-titulo">${urgentes.length} produtos zerados!</div>Vá em Compras para ver a lista</div></div>`;
   if(mPerigo>0) al+=`<div class="alerta-box vermelho"><div class="alerta-icon">⚠️</div><div class="alerta-texto"><div class="alerta-titulo">${mPerigo} produto(s) com margem abaixo do mínimo!</div>Você está vendendo com prejuízo</div></div>`;
+  // Alerta capital parado
+  const prodParado90 = prods.filter(p=>{
+    const q=data.estoques[p.id]||0; if(q===0) return false;
+    const pr=data.precos[p.id]||{}; if(!pr.custo) return false;
+    const g=calcularGiro(data,p.id);
+    return g && g.mediasMensal>0 && Math.round((q/g.mediasMensal)*30)>90;
+  });
+  if(prodParado90.length>0) al+=`<div class="alerta-box amarelo"><div class="alerta-icon">💸</div><div class="alerta-texto"><div class="alerta-titulo">${prodParado90.length} produto(s) com +90 dias de estoque parado</div>Veja "Capital Parado" no painel</div></div>`;
   if(mBaixo>0) al+=`<div class="alerta-box amarelo"><div class="alerta-icon">💲</div><div class="alerta-texto"><div class="alerta-titulo">${mBaixo} produto(s) com margem baixa</div>Abaixo da faixa ideal para a categoria</div></div>`;
   if(semPreco>0) al+=`<div class="alerta-box azul"><div class="alerta-icon">📝</div><div class="alerta-texto"><div class="alerta-titulo">${semPreco} produtos sem preço de venda</div>Preencha na aba Preços para ver as margens</div></div>`;
 
@@ -874,6 +883,43 @@ function renderDashboard(){
         <span style="font-size:.68rem;color:var(--muted)">mín:${x.giro.minIdeal}</span>
       </div>`).join('');
 
+  // Capital parado
+  const capitalParado = prods.map(p=>{
+    const q = data.estoques[p.id]||0;
+    if (q===0) return null;
+    const pr = data.precos[p.id]||{};
+    if (!pr.custo) return null;
+    const giro = calcularGiro(data, p.id);
+    const investido = pr.custo * q;
+    // Dias de estoque = (estoque atual / giro mensal) * 30
+    const diasEstoque = giro && giro.mediasMensal > 0
+      ? Math.round((q / giro.mediasMensal) * 30)
+      : null;
+    return {p, q, investido, diasEstoque, giro};
+  }).filter(x=>x && (x.diasEstoque===null || x.diasEstoque > 45))
+    .sort((a,b)=>b.investido-a.investido);
+
+  const totalParado = capitalParado.reduce((s,x)=>s+x.investido,0);
+  document.getElementById('dash-capital-parado').innerHTML = capitalParado.length===0
+    ? '<div style="color:var(--verde);font-size:.8rem;padding:4px">✅ Nenhum capital parado identificado!</div>'
+    : `<div style="margin-bottom:10px">
+        <div style="font-size:.75rem;color:var(--muted)">Total em produtos com giro lento ou sem histórico</div>
+        <div style="font-size:1.3rem;font-weight:800;color:var(--amarelo)">${fmt(totalParado)}</div>
+       </div>` +
+      capitalParado.slice(0,5).map(x=>{
+        const alerta = x.diasEstoque && x.diasEstoque > 90 ? '🔴' : x.diasEstoque && x.diasEstoque > 60 ? '🟡' : '⚪';
+        const diasTxt = x.diasEstoque ? x.diasEstoque+'d estoque' : 'sem histórico de venda';
+        return `<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--borda)">
+          <div style="font-size:.9rem">${alerta}</div>
+          <div style="flex:1">
+            <div style="font-size:.78rem;font-weight:700"><span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span> ${x.p.linha} ${x.p.tam}</div>
+            <div style="font-size:.68rem;color:var(--muted)">${x.q} pacotes · ${diasTxt}</div>
+          </div>
+          <div style="font-size:.82rem;font-weight:700;color:var(--amarelo)">${fmt(x.investido)}</div>
+        </div>`;
+      }).join('') +
+      `<div style="font-size:.68rem;color:var(--muted);margin-top:8px">🔴 +90 dias · 🟡 +60 dias · ⚪ sem histórico</div>`;
+
   const urg=prods.filter(p=>(data.estoques[p.id]||0)===0).slice(0,6);
   document.getElementById('dash-urgentes').innerHTML=urg.length===0
     ?'<div style="color:var(--verde);font-size:.82rem;padding:8px">✅ Nenhum produto zerado!</div>'
@@ -897,7 +943,7 @@ function renderEstoque(filtro){
   document.getElementById('est-sub').textContent=prods.length+' produtos · '+total+' pacotes';
   const labels={ok:'OK',atencao:'ATENÇÃO',comprar:'ZERADO'};
   document.getElementById('lista-estoque').innerHTML=`<div style="overflow-x:auto"><table>
-    <tr><th>Produto</th><th>Tam</th><th>Qtd</th><th>Mín</th><th>Giro/mês</th><th>Status</th></tr>
+    <tr><th>Produto</th><th>Tam</th><th>Qtd</th><th>Mín🤖</th><th>Giro/mês</th><th>Dias</th><th>Status</th></tr>
     ${prods.map(p=>{
       const q=data.estoques[p.id]||0;
       const stObj=statusEstInteligente(data,p);
@@ -906,17 +952,21 @@ function renderEstoque(filtro){
       const giro=calcularGiro(data,p.id);
       const giroTxt=giro?giro.mediasMensal+' pct':'—';
       const minLabel=giro?`<span style="color:var(--accent)">${min}</span><span style="font-size:.6rem;color:var(--muted)"> 🤖</span>`:`${min}`;
+      const diasCob = giro && giro.mediasMensal>0 ? Math.round((q/giro.mediasMensal)*30) : null;
+      const diasCor = diasCob===null?'var(--muted)':diasCob>90?'var(--vermelho)':diasCob>60?'var(--amarelo)':'var(--verde)';
+      const diasTxt2 = diasCob===null?'—':diasCob+'d';
       return `<tr>
         <td><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="font-size:.72rem">${p.linha}</span>${p.obs?`<span class="chip sem-estoque" title="${p.obs}">⚠️</span>`:''}</td>
         <td style="font-weight:700">${p.tam}</td>
         <td style="font-weight:700">${q}</td>
         <td>${minLabel}</td>
         <td style="font-size:.75rem;color:var(--muted)">${giroTxt}</td>
+        <td style="font-weight:700;color:${diasCor};font-size:.78rem">${diasTxt2}</td>
         <td><span class="badge badge-${st==='ok'?'ok':st==='atencao'?'atencao':'comprar'}">${labels[st]}</span></td>
       </tr>`;
     }).join('')}
   </table></div>
-  <div style="font-size:.68rem;color:var(--muted);margin-top:6px">🤖 = mínimo calculado automaticamente pelo giro real</div>`;
+  <div style="font-size:.68rem;color:var(--muted);margin-top:6px">🤖 = mínimo pelo giro real · Dias = cobertura do estoque atual (🔴+90d 🟡+60d 🟢ok)</div>`;
 }
 
 function abrirModalEstoque(){
