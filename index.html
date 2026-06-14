@@ -248,6 +248,7 @@ window.showSync = function(msg, cor) {
   <div class="card"><div class="card-titulo">💲 Saúde das Margens</div><div id="dash-margens-saude"></div></div>
   <div class="card"><div class="card-titulo">🚦 Situação por Marca</div><div id="dash-marcas"></div></div>
   <div class="card"><div class="card-titulo">🔴 Urgente — Comprar Agora</div><div id="dash-urgentes"></div></div>
+  <div class="card"><div class="card-titulo">📈 Top Giro — Mais vendidos</div><div id="dash-top-giro"></div></div>
 </div>
 
 <div id="sec-estoque" class="sec">
@@ -788,8 +789,8 @@ function renderDashboard(){
   const data=load();
   const prods=data.produtos;
   const urgentes=prods.filter(p=>(data.estoques[p.id]||0)===0);
-  const atencao=prods.filter(p=>{const q=data.estoques[p.id]||0;return q>0&&q<=p.minimo;});
-  const ok=prods.filter(p=>(data.estoques[p.id]||0)>p.minimo);
+  const atencao=prods.filter(p=>{const q=data.estoques[p.id]||0;const min=minimoInteligente(data,p);return q>0&&q<=min;});
+  const ok=prods.filter(p=>{const q=data.estoques[p.id]||0;const min=minimoInteligente(data,p);return q>min;});
   const semPreco=prods.filter(p=>!data.precos[p.id]||!data.precos[p.id].custo).length;
   let mIdeal=0,mBaixo=0,mPerigo=0,mVazio=0;
   prods.forEach(p=>{
@@ -860,6 +861,19 @@ function renderDashboard(){
       </div></div>`;
   }).join('');
 
+  // Top giro
+  const girosCalc = prods.map(p=>({p, giro:calcularGiro(data,p.id)}))
+    .filter(x=>x.giro).sort((a,b)=>b.giro.mediasMensal-a.giro.mediasMensal).slice(0,5);
+  document.getElementById('dash-top-giro').innerHTML = girosCalc.length===0
+    ? '<div style="color:var(--muted);font-size:.8rem">Importe vendas do Infarma para ver o giro</div>'
+    : girosCalc.map((x,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--borda)">
+        <div style="font-weight:800;color:var(--muted);width:18px">${i+1}</div>
+        <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+        <span style="font-size:.78rem;flex:1">${x.p.linha} ${x.p.tam}</span>
+        <span style="font-size:.82rem;font-weight:700;color:var(--accent)">${x.giro.mediasMensal} pct/mês</span>
+        <span style="font-size:.68rem;color:var(--muted)">mín:${x.giro.minIdeal}</span>
+      </div>`).join('');
+
   const urg=prods.filter(p=>(data.estoques[p.id]||0)===0).slice(0,6);
   document.getElementById('dash-urgentes').innerHTML=urg.length===0
     ?'<div style="color:var(--verde);font-size:.82rem;padding:8px">✅ Nenhum produto zerado!</div>'
@@ -883,19 +897,26 @@ function renderEstoque(filtro){
   document.getElementById('est-sub').textContent=prods.length+' produtos · '+total+' pacotes';
   const labels={ok:'OK',atencao:'ATENÇÃO',comprar:'ZERADO'};
   document.getElementById('lista-estoque').innerHTML=`<div style="overflow-x:auto"><table>
-    <tr><th>Produto</th><th>Tipo</th><th>Tam</th><th>Qtd</th><th>Mín</th><th>Status</th></tr>
+    <tr><th>Produto</th><th>Tam</th><th>Qtd</th><th>Mín</th><th>Giro/mês</th><th>Status</th></tr>
     ${prods.map(p=>{
-      const q=data.estoques[p.id]||0,st=statusEst(data,p);
+      const q=data.estoques[p.id]||0;
+      const stObj=statusEstInteligente(data,p);
+      const st=stObj.status;
+      const min=stObj.min;
+      const giro=calcularGiro(data,p.id);
+      const giroTxt=giro?giro.mediasMensal+' pct':'—';
+      const minLabel=giro?`<span style="color:var(--accent)">${min}</span><span style="font-size:.6rem;color:var(--muted)"> 🤖</span>`:`${min}`;
       return `<tr>
-        <td><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="font-size:.73rem">${p.linha}</span>${p.obs?`<span class="chip sem-estoque" title="${p.obs}">⚠️</span>`:''}</td>
-        <td style="color:var(--muted);font-size:.73rem">${p.tipo}</td>
+        <td><span class="marca-badge ${marcaClass(p.marca)}">${p.marca}</span> <span style="font-size:.72rem">${p.linha}</span>${p.obs?`<span class="chip sem-estoque" title="${p.obs}">⚠️</span>`:''}</td>
         <td style="font-weight:700">${p.tam}</td>
         <td style="font-weight:700">${q}</td>
-        <td style="color:var(--muted)">${p.minimo}</td>
+        <td>${minLabel}</td>
+        <td style="font-size:.75rem;color:var(--muted)">${giroTxt}</td>
         <td><span class="badge badge-${st==='ok'?'ok':st==='atencao'?'atencao':'comprar'}">${labels[st]}</span></td>
       </tr>`;
     }).join('')}
-  </table></div>`;
+  </table></div>
+  <div style="font-size:.68rem;color:var(--muted);margin-top:6px">🤖 = mínimo calculado automaticamente pelo giro real</div>`;
 }
 
 function abrirModalEstoque(){
@@ -1062,7 +1083,10 @@ function excluirVenda(id){
 
 function renderCompras(){
   const data=load();
-  const precisam=data.produtos.filter(p=>(data.estoques[p.id]||0)<p.minimo).sort((a,b)=>(data.estoques[a.id]||0)-(data.estoques[b.id]||0));
+  const precisam=data.produtos.filter(p=>{
+    const min=minimoInteligente(data,p);
+    return (data.estoques[p.id]||0)<min;
+  }).sort((a,b)=>(data.estoques[a.id]||0)-(data.estoques[b.id]||0));
   if(precisam.length===0){
     document.getElementById('lista-compras').innerHTML=`<div class="vazio"><div class="vazio-icon">✅</div><p>Estoque OK!</p></div>`;
     document.getElementById('total-compras').textContent='—';return;
@@ -1070,7 +1094,8 @@ function renderCompras(){
   let total=0;
   document.getElementById('lista-compras').innerHTML=precisam.map(p=>{
     const q=data.estoques[p.id]||0;
-    const repor=Math.max((p.minimo*2)-q,1);
+    const minC=minimoInteligente(data,p);
+    const repor=Math.max((minC*2)-q,1);
     const pr=data.precos[p.id]||{};
     const custo=pr.custo?pr.custo*repor:0;
     total+=custo;
@@ -1087,6 +1112,41 @@ function renderCompras(){
     </div>`;
   }).join('');
   document.getElementById('total-compras').textContent=total>0?fmt(total):'— (sem preços)';
+}
+
+// ── GIRO INTELIGENTE ──────────────────────────────────────────────────────────
+function calcularGiro(data, pid) {
+  const vendas = (data.vendas||[]).filter(v=>v.produtoId===pid);
+  if (vendas.length === 0) return null;
+  // Agrupa por mês
+  const porMes = {};
+  vendas.forEach(v=>{
+    const d = new Date(v.data);
+    const key = d.getFullYear()+'-'+(d.getMonth()+1);
+    porMes[key] = (porMes[key]||0) + v.qtd;
+  });
+  const meses = Object.values(porMes);
+  if (meses.length === 0) return null;
+  const media = meses.reduce((s,x)=>s+x,0) / meses.length;
+  return {
+    mediasMensal: Math.round(media * 10) / 10,
+    minIdeal: Math.max(Math.ceil(media / 2), 1), // 15 dias de estoque
+    meses: meses.length,
+  };
+}
+
+function minimoInteligente(data, p) {
+  const giro = calcularGiro(data, p.id);
+  if (!giro) return p.minimo; // sem histórico, usa o manual
+  return giro.minIdeal;
+}
+
+function statusEstInteligente(data, p) {
+  const q = data.estoques[p.id]||0;
+  const min = minimoInteligente(data, p);
+  if (q === 0) return {status:'comprar', min};
+  if (q <= min) return {status:'atencao', min};
+  return {status:'ok', min};
 }
 
 // ── SEÇÃO (INFANTIL / GERIÁTRICA) ─────────────────────────────────────────────
