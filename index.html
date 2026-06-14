@@ -413,6 +413,20 @@ window.showSync = function(msg, cor) {
   </div>
 
   <div class="card">
+    <div class="card-titulo">💾 Backup Completo</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Exporta todos os dados para um arquivo JSON. Salve no Google Drive ou WhatsApp.</div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="exportarBackup()">💾 Exportar Backup Completo</button>
+    <div id="backup-status" style="margin-top:8px;font-size:.72rem;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">📂 Restaurar Backup</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Restaura dados de um arquivo de backup anterior.</div>
+    <input type="file" id="backup-file" accept=".json" style="display:none" onchange="importarBackup(this)">
+    <button class="btn btn-ghost" style="width:100%;justify-content:center" onclick="document.getElementById('backup-file').click()">📂 Selecionar arquivo de backup</button>
+  </div>
+
+  <div class="card">
     <div class="card-titulo">ℹ️ Como funciona a integração</div>
     <div style="font-size:.8rem;color:var(--muted);display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;gap:10px;align-items:flex-start"><span style="color:var(--accent);font-weight:700;flex-shrink:0">1.</span><span>Registre as vendas de fraldas aqui normalmente</span></div>
@@ -1309,6 +1323,56 @@ function confirmarImportacao() {
   document.getElementById('imp-status').textContent = '✅ Vendas importadas com sucesso!';
   document.getElementById('imp-file').value = '';
   alert('✅ Vendas importadas! Veja o histórico na aba Vendas.');
+}
+
+// ── BACKUP ────────────────────────────────────────────────────────────────────
+function exportarBackup() {
+  const data = load();
+  const backup = {
+    versao: 'msfarma-fraldas-v1',
+    data: new Date().toISOString(),
+    dados: {
+      estoques: data.estoques,
+      vendas: data.vendas,
+      precos: data.precos,
+      alertas: data.alertas||[],
+    }
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
+  a.href = url;
+  a.download = 'backup-fraldas-' + hoje + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  document.getElementById('backup-status').textContent = '✅ Backup exportado! Salve no Google Drive.';
+}
+
+function importarBackup(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (!confirm('⚠️ Isso vai substituir os dados atuais pelo backup. Tem certeza?')) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const backup = JSON.parse(e.target.result);
+      if (!backup.versao || !backup.dados) { alert('Arquivo inválido!'); return; }
+      const data = load();
+      data.estoques = backup.dados.estoques || data.estoques;
+      data.vendas = backup.dados.vendas || data.vendas;
+      data.precos = backup.dados.precos || data.precos;
+      data.alertas = backup.dados.alertas || data.alertas;
+      window._dbCache = data;
+      save(data);
+      alert('✅ Backup restaurado com sucesso!');
+      renderDashboard();
+    } catch(e) {
+      alert('Erro ao restaurar backup: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
 }
 
 // ── INTEGRAÇÃO MS FARMA ───────────────────────────────────────────────────────
