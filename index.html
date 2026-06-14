@@ -142,15 +142,22 @@ window.loadDB = async function() {
   try {
     const snap = await getDoc(DOC_REF);
     if (snap.exists()) {
-      window._dbCache = snap.data();
+      const fbData = snap.data();
+      // SEMPRE usa lista de produtos do código
+      window._dbCache = {
+        produtos: PRODUTOS_INICIAIS,
+        estoques: {...ESTOQUE_INICIAL, ...(fbData.estoques||{})},
+        vendas: fbData.vendas||[],
+        precos: fbData.precos||{},
+        alertas: fbData.alertas||[],
+      };
     } else {
-      // Primeiro acesso — usar dados locais ou iniciais
-      const local = localStorage.getItem('fraldas-msfarma-v2');
+      const local = localStorage.getItem('fraldas-msfarma-v3');
       window._dbCache = local ? JSON.parse(local) : null;
     }
   } catch(e) {
     console.warn('Firebase offline, usando localStorage', e);
-    const local = localStorage.getItem('fraldas-msfarma-v2');
+    const local = localStorage.getItem('fraldas-msfarma-v3');
     window._dbCache = local ? JSON.parse(local) : null;
   }
   return window._dbCache;
@@ -170,13 +177,22 @@ window.saveDB = async function(data) {
 // Escuta mudanças em tempo real (quando a Adriana salvar algo)
 onSnapshot(DOC_REF, (snap) => {
   if (snap.exists()) {
-    window._dbCache = snap.data();
-    localStorage.setItem('fraldas-msfarma-v2', JSON.stringify(window._dbCache));
+    const fbData = snap.data();
+    // IMPORTANTE: sempre usa lista de produtos do código, não do Firebase
+    const merged = {
+      produtos: PRODUTOS_INICIAIS,
+      estoques: {...ESTOQUE_INICIAL, ...(fbData.estoques||{})},
+      vendas: fbData.vendas||[],
+      precos: fbData.precos||{},
+      alertas: fbData.alertas||[],
+    };
+    window._dbCache = merged;
+    localStorage.setItem('fraldas-msfarma-v3', JSON.stringify(merged));
     // Re-renderiza a aba ativa
     const abaAtiva = document.querySelector('.tab.ativo');
     if (abaAtiva) {
       const idx = [...document.querySelectorAll('.tab')].indexOf(abaAtiva);
-      const tabs = ['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','integracao'];
+      const tabs = ['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','importar','integracao'];
       if (tabs[idx]) {
         const renders = {dashboard:renderDashboard,estoque:()=>renderEstoque(),precos:()=>renderPrecos(),vendas:renderVendas,compras:renderCompras,relatorio:()=>{if(typeof initRelatorio==='function')initRelatorio();}};
         if (renders[tabs[idx]]) renders[tabs[idx]]();
