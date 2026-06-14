@@ -366,6 +366,7 @@ window.showSync = function(msg, cor) {
   <div class="card"><div class="card-titulo">🏆 Ranking de Marcas</div><div id="rel-ranking"></div></div>
   <div class="card"><div class="card-titulo">📦 Produtos que mais giraram</div><div id="rel-giro"></div></div>
   <div class="card"><div class="card-titulo">💤 Produtos sem venda no período</div><div id="rel-parado"></div></div>
+  <div class="card"><div class="card-titulo">📅 Sazonalidade — Tendência por mês</div><div id="rel-sazonalidade"></div></div>
 </div>
 
 <!-- ALERTAS PROMOÇÃO -->
@@ -1846,6 +1847,76 @@ function renderRelatorio() {
         <span style="font-size:.78rem;flex:1;color:var(--muted)">${p.linha} ${p.tam}</span>
         <span style="font-size:.7rem;color:var(--muted)">${data.estoques[p.id]||0} em estoque</span>
       </div>`).join('');
+
+  // Sazonalidade
+  renderSazonalidade(data);
+}
+
+function renderSazonalidade(data) {
+  const vendas = data.vendas||[];
+  if (vendas.length === 0) {
+    document.getElementById('rel-sazonalidade').innerHTML = '<div style="color:var(--muted);font-size:.8rem">Importe mais meses do Infarma para ver tendências</div>';
+    return;
+  }
+
+  // Agrupa vendas por mês e por produto
+  const porMes = {};
+  const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+
+  vendas.forEach(v=>{
+    const d = new Date(v.data);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    if (!porMes[key]) porMes[key] = {label: MESES[d.getMonth()]+'/'+String(d.getFullYear()).slice(2), qtd:0, fat:0};
+    const p = data.produtos.find(x=>x.id===v.produtoId);
+    const pr = p ? data.precos[p.id]||{} : {};
+    porMes[key].qtd += v.qtd;
+    porMes[key].fat += pr.venda ? pr.venda*v.qtd : 0;
+  });
+
+  const mesesOrdenados = Object.entries(porMes).sort((a,b)=>a[0].localeCompare(b[0]));
+  if (mesesOrdenados.length < 2) {
+    document.getElementById('rel-sazonalidade').innerHTML = '<div style="color:var(--muted);font-size:.8rem">Precisa de pelo menos 2 meses para identificar tendências</div>';
+    return;
+  }
+
+  const maxQtd = Math.max(...mesesOrdenados.map(([,v])=>v.qtd), 1);
+  const maxFat = Math.max(...mesesOrdenados.map(([,v])=>v.fat), 1);
+
+  // Tendência: compara último mês com anterior
+  const ultimo = mesesOrdenados[mesesOrdenados.length-1][1];
+  const penultimo = mesesOrdenados[mesesOrdenados.length-2][1];
+  const tendQtd = ultimo.qtd > penultimo.qtd ? '📈 Crescendo' : ultimo.qtd < penultimo.qtd ? '📉 Caindo' : '➡️ Estável';
+  const varPct = penultimo.qtd > 0 ? Math.round(((ultimo.qtd-penultimo.qtd)/penultimo.qtd)*100) : 0;
+  const varCor = varPct > 0 ? 'var(--verde)' : varPct < 0 ? 'var(--vermelho)' : 'var(--muted)';
+
+  document.getElementById('rel-sazonalidade').innerHTML = `
+    <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+      <div style="background:var(--card2);border-radius:8px;padding:10px 14px;flex:1;min-width:120px">
+        <div style="font-size:.68rem;color:var(--muted)">Tendência</div>
+        <div style="font-size:.9rem;font-weight:700">${tendQtd}</div>
+      </div>
+      <div style="background:var(--card2);border-radius:8px;padding:10px 14px;flex:1;min-width:120px">
+        <div style="font-size:.68rem;color:var(--muted)">Variação</div>
+        <div style="font-size:.9rem;font-weight:700;color:${varCor}">${varPct > 0 ? '+' : ''}${varPct}% em pacotes</div>
+      </div>
+    </div>
+    <div style="font-size:.72rem;color:var(--muted);margin-bottom:8px;font-weight:700">PACOTES VENDIDOS POR MÊS</div>
+    ${mesesOrdenados.map(([key, v])=>{
+      const w = Math.round((v.qtd/maxQtd)*100);
+      const isMesAtual = key === new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0');
+      return `<div style="margin-bottom:8px">
+        <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:3px">
+          <span style="font-weight:${isMesAtual?'700':'400'};color:${isMesAtual?'var(--accent)':'var(--texto)'}">${v.label}${isMesAtual?' (atual)':''}</span>
+          <span style="color:var(--muted)">${v.qtd} pct${v.fat>0?' · '+fmt(v.fat):''}
+          </span>
+        </div>
+        <div style="height:7px;border-radius:4px;background:var(--borda)">
+          <div style="height:100%;border-radius:4px;width:${w}%;background:${isMesAtual?'var(--accent)':'linear-gradient(90deg,var(--azul),var(--roxo))'}"></div>
+        </div>
+      </div>`;
+    }).join('')}
+    <div style="margin-top:12px;font-size:.72rem;color:var(--muted)">💡 Conforme importar mais meses do Infarma, os padrões sazonais ficam mais claros</div>
+  `;
 }
 
 // ── ALERTAS PROMOÇÃO ──────────────────────────────────────────────────────────
