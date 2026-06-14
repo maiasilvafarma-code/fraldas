@@ -372,9 +372,43 @@ window.showSync = function(msg, cor) {
 <!-- ALERTAS PROMOÇÃO -->
 <div id="sec-alertas" class="sec">
   <div class="flex-entre">
-    <div><div class="sec-title">🔔 Alertas de Promoção</div><div class="sec-sub">Registre ofertas do representante com prazo</div></div>
-    <button class="btn btn-primary" onclick="abrirModalAlerta()">+ Nova</button>
+    <div><div class="sec-title">🔔 Alertas</div><div class="sec-sub">Promoções e simulador de aumento de custo</div></div>
+    <button class="btn btn-primary" onclick="abrirModalAlerta()">+ Promoção</button>
   </div>
+
+  <!-- SIMULADOR DE AUMENTO DE CUSTO -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-titulo">⚡ Simulador — E se o representante aumentar o preço?</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">Simule um aumento de custo e veja quais produtos saem da margem ideal</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+      <div>
+        <label>Fornecedor / Marca</label>
+        <select id="sim-marca">
+          <option value="todas">Todas as marcas</option>
+          <option value="Hipopó">Hipopó</option>
+          <option value="Babysec">Babysec</option>
+          <option value="Mili">Mili</option>
+          <option value="Pampers">Pampers</option>
+          <option value="MamyPoko">MamyPoko</option>
+        </select>
+      </div>
+      <div>
+        <label>Aumento de custo (%)</label>
+        <input type="number" id="sim-aumento" placeholder="Ex: 5" step="0.5" min="0" max="50">
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <div class="filtro-btn" onclick="document.getElementById('sim-aumento').value=3;simularAumento()">+3%</div>
+      <div class="filtro-btn" onclick="document.getElementById('sim-aumento').value=5;simularAumento()">+5%</div>
+      <div class="filtro-btn" onclick="document.getElementById('sim-aumento').value=8;simularAumento()">+8%</div>
+      <div class="filtro-btn" onclick="document.getElementById('sim-aumento').value=10;simularAumento()">+10%</div>
+      <div class="filtro-btn" onclick="document.getElementById('sim-aumento').value=15;simularAumento()">+15%</div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="simularAumento()">⚡ Simular impacto</button>
+    <div id="sim-resultado" style="margin-top:12px"></div>
+  </div>
+
+  <div class="sec-title" style="font-size:.85rem;margin-bottom:8px">🔔 Promoções cadastradas</div>
   <div id="lista-alertas"></div>
 </div>
 
@@ -1592,6 +1626,101 @@ function confirmarImportacao() {
   document.getElementById('imp-status').textContent = '✅ Vendas importadas com sucesso!';
   document.getElementById('imp-file').value = '';
   alert('✅ Vendas importadas! Veja o histórico na aba Vendas.');
+}
+
+// ── SIMULADOR AUMENTO CUSTO ───────────────────────────────────────────────────
+function simularAumento() {
+  const marca = document.getElementById('sim-marca').value;
+  const aumento = parseFloat(document.getElementById('sim-aumento').value)||0;
+  if (!aumento) { alert('Informe o percentual de aumento'); return; }
+
+  const data = load();
+  const prods = marca === 'todas'
+    ? data.produtos
+    : data.produtos.filter(p => p.marca === marca);
+
+  const comPreco = prods.filter(p => data.precos[p.id]?.custo && data.precos[p.id]?.venda);
+  if (comPreco.length === 0) {
+    document.getElementById('sim-resultado').innerHTML = '<div style="color:var(--muted);font-size:.8rem">Nenhum produto com custo e venda cadastrados para simular</div>';
+    return;
+  }
+
+  const fator = 1 + aumento / 100;
+  const resultados = comPreco.map(p => {
+    const pr = data.precos[p.id];
+    const custoAtual = pr.custo;
+    const custoNovo = custoAtual * fator;
+    const venda = pr.venda;
+    const margemAtual = margem(custoAtual, venda);
+    const margemNova = margem(custoNovo, venda);
+    const catKey = getCategoria(p);
+    const cat = CATEGORIAS[catKey];
+    const stAtual = statusMargem(margemAtual, catKey);
+    const stNova = statusMargem(margemNova, catKey);
+    const impacto = margemNova - margemAtual;
+    // Preço de venda sugerido para manter margem ideal
+    const vendaSugerida = custoNovo / (1 - (cat.ideal_min + cat.ideal_max) / 2 / 100);
+    return { p, pr, custoAtual, custoNovo, venda, margemAtual, margemNova, stAtual, stNova, impacto, vendaSugerida, catKey, cat };
+  }).sort((a, b) => a.margemNova - b.margemNova);
+
+  const emPerigo = resultados.filter(x => x.margemNova < CATEGORIAS[x.catKey].min);
+  const degradados = resultados.filter(x => x.margemNova >= CATEGORIAS[x.catKey].min && x.margemNova < CATEGORIAS[x.catKey].ideal_min);
+  const ok = resultados.filter(x => x.margemNova >= CATEGORIAS[x.catKey].ideal_min);
+
+  const custoTotalAtual = comPreco.reduce((s,p)=>{
+    const q=data.estoques[p.id]||0; return s+(data.precos[p.id].custo*q);
+  },0);
+  const custoTotalNovo = custoTotalAtual * fator;
+  const impactoTotal = custoTotalNovo - custoTotalAtual;
+
+  document.getElementById('sim-resultado').innerHTML = `
+    <div style="background:#2d0a0a;border:1px solid #7f1d1d;border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:6px;font-weight:700">IMPACTO DO AUMENTO DE ${aumento}%</div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:.8rem">
+        <div><span style="color:var(--muted)">Custo adicional no estoque: </span><strong style="color:var(--vermelho)">${fmt(impactoTotal)}</strong></div>
+        <div><span style="color:var(--muted)">Produtos em perigo: </span><strong style="color:var(--vermelho)">${emPerigo.length}</strong></div>
+        <div><span style="color:var(--muted)">Margem degradada: </span><strong style="color:var(--amarelo)">${degradados.length}</strong></div>
+        <div><span style="color:var(--muted)">Ainda ok: </span><strong style="color:var(--verde)">${ok.length}</strong></div>
+      </div>
+    </div>
+
+    ${emPerigo.length > 0 ? `
+    <div style="font-size:.72rem;font-weight:700;color:var(--vermelho);margin-bottom:6px">🔴 PREJUÍZO — precisa aumentar o preço de venda</div>
+    ${emPerigo.map(x=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--borda)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+          <span style="font-size:.78rem;flex:1;font-weight:600">${x.p.linha} ${x.p.tam}</span>
+          <span style="font-size:.75rem;color:var(--vermelho);font-weight:700">${pct(x.margemAtual)} → ${pct(x.margemNova)}</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:3px;padding-left:2px">
+          Custo: ${fmt(x.custoAtual)} → ${fmt(x.custoNovo)} · Venda sugerida: <strong style="color:var(--accent)">${fmt(x.vendaSugerida)}</strong>
+        </div>
+      </div>`).join('')}` : ''}
+
+    ${degradados.length > 0 ? `
+    <div style="font-size:.72rem;font-weight:700;color:var(--amarelo);margin:10px 0 6px">🟡 ATENÇÃO — margem abaixo do ideal</div>
+    ${degradados.map(x=>`
+      <div style="padding:8px 0;border-bottom:1px solid var(--borda)">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+          <span style="font-size:.78rem;flex:1;font-weight:600">${x.p.linha} ${x.p.tam}</span>
+          <span style="font-size:.75rem;color:var(--amarelo);font-weight:700">${pct(x.margemAtual)} → ${pct(x.margemNova)}</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:3px">
+          Venda sugerida para manter ideal: <strong style="color:var(--accent)">${fmt(x.vendaSugerida)}</strong>
+        </div>
+      </div>`).join('')}` : ''}
+
+    ${ok.length > 0 ? `
+    <div style="font-size:.72rem;font-weight:700;color:var(--verde);margin:10px 0 6px">✅ Ainda dentro da faixa ideal</div>
+    ${ok.map(x=>`
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--borda)">
+        <span class="marca-badge ${marcaClass(x.p.marca)}">${x.p.marca}</span>
+        <span style="font-size:.75rem;flex:1">${x.p.linha} ${x.p.tam}</span>
+        <span style="font-size:.73rem;color:var(--verde)">${pct(x.margemAtual)} → ${pct(x.margemNova)}</span>
+      </div>`).join('')}` : ''}
+  `;
 }
 
 // ── BACKUP ────────────────────────────────────────────────────────────────────
