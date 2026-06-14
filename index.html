@@ -110,6 +110,8 @@
   .alerta-promo.expirado{background:#1a1a1a;border-color:#334155;opacity:.6;}
   .rel-rank-bar{height:6px;border-radius:3px;background:var(--borda);margin-top:3px;}
   .rel-rank-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--accent),var(--roxo));}
+  .secao-infantil{background:#1e3a5f;color:#60a5fa;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
+  .secao-geriatrica{background:#3d2200;color:#fb923c;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
   @media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
 </style>
 <script type="module">
@@ -237,6 +239,11 @@ window.showSync = function(msg, cor) {
     <div><div class="sec-title">🏪 Estoque</div><div class="sec-sub" id="est-sub"></div></div>
     <button class="btn btn-ghost" onclick="abrirModalEstoque()">✏️ Atualizar</button>
   </div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <div class="filtro-btn ativo" id="secao-est-todas" onclick="setSecaoEst('todas')">Todas</div>
+    <div class="filtro-btn" id="secao-est-infantil" onclick="setSecaoEst('infantil')">👶 Infantil</div>
+    <div class="filtro-btn" id="secao-est-geriatrica" onclick="setSecaoEst('geriatrica')">🧓 Geriátrica</div>
+  </div>
   <div class="filtro-bar" id="filtro-est"></div>
   <div id="lista-estoque"></div>
 </div>
@@ -253,6 +260,11 @@ window.showSync = function(msg, cor) {
       <div style="display:flex;align-items:center;gap:10px"><span class="cat-premium">PREMIUM</span><span style="color:var(--muted)">Babysec Premium, Pampers</span><span style="margin-left:auto;font-weight:700;color:#c4b5fd">28%–35%</span></div>
     </div>
     <div style="margin-top:10px;padding:8px;background:#2d0a0a;border-radius:8px;font-size:.72rem;color:#fca5a5">⚠️ Abaixo de 12% = prejuízo real</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:8px">
+    <div class="filtro-btn ativo" id="secao-preco-todas" onclick="setSecaoPreco('todas')">Todas</div>
+    <div class="filtro-btn" id="secao-preco-infantil" onclick="setSecaoPreco('infantil')">👶 Infantil</div>
+    <div class="filtro-btn" id="secao-preco-geriatrica" onclick="setSecaoPreco('geriatrica')">🧓 Geriátrica</div>
   </div>
   <div class="filtro-bar" id="filtro-preco"></div>
   <div id="lista-precos"></div>
@@ -489,7 +501,7 @@ window.showSync = function(msg, cor) {
 </div>
 
 <script>
-const KEY = 'fraldas-msfarma-v3';
+const KEY = 'fraldas-msfarma-v4';
 
 const CATEGORIAS = {
   economica:     {label:'ECONÔMICA',    cls:'cat-economica',    min:12,ideal_min:12,ideal_max:18,teto:20},
@@ -520,7 +532,7 @@ function statusMargem(m,catKey) {
 
 // ── PRODUTOS E PREÇOS INICIAIS (da nota do representante) ─────────────────────
 const PRODUTOS_INICIAIS = [
-  {id:'h01',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:4,obs:''},
+  {id:'h01',secao:'infantil',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:4,obs:''},
   {id:'h02',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:4,obs:''},
   {id:'h03',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'XG',minimo:4,obs:'Fornecedor sem estoque'},
   {id:'h04',marca:'Hipopó',linha:'Shortinho Mega',tipo:'SHORTINHO',tam:'XXG',minimo:4,obs:''},
@@ -585,10 +597,26 @@ const PRODUTOS_INICIAIS = [
   {id:'mp01',marca:'MamyPoko',linha:'Pacotão',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
   {id:'mp02',marca:'MamyPoko',linha:'Mega',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
   // Looping
-  {id:'lo01',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado'},
-  {id:'lo02',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'G',minimo:3,obs:'Descontinuado'},
-  {id:'lo03',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XG',minimo:3,obs:'Descontinuado'},
-  {id:'lo04',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XXG',minimo:3,obs:'Descontinuado'},
+  {id:'lo01',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'M',minimo:3,obs:'Descontinuado',secao:'infantil'},
+  {id:'lo02',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'G',minimo:3,obs:'Descontinuado',secao:'infantil'},
+  {id:'lo03',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XG',minimo:3,obs:'Descontinuado',secao:'infantil'},
+  {id:'lo04',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XXG',minimo:3,obs:'Descontinuado',secao:'infantil'},
+  // Babysec Ultrasec Shortinho Mega (infantil)
+  {id:'b24',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:3,obs:'',secao:'infantil'},
+  {id:'b25',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:3,obs:'',secao:'infantil'},
+  // ConfortBaby (infantil)
+  {id:'cb01',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'M',minimo:3,obs:'',secao:'infantil'},
+  {id:'cb02',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'EG',minimo:3,obs:'',secao:'infantil'},
+  // GERIÁTRICA
+  {id:'g01',marca:'Confort',linha:'Mast',tipo:'FITA',tam:'Único',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g02',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g03',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g04',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g05',marca:'Lifree',linha:'Calça Extra Mega',tipo:'FITA',tam:'P/M',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g06',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g07',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g08',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g09',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'G/XG 32und',minimo:3,obs:'',secao:'geriatrica'},
 ];
 
 const ESTOQUE_INICIAL = {
@@ -625,6 +653,12 @@ const ESTOQUE_INICIAL = {
   mp01:2,mp02:3,
   // Looping
   lo01:4,lo02:3,lo03:4,lo04:4,
+  // Babysec Ultrasec Shortinho Mega novos
+  b24:0,b25:0,
+  // ConfortBaby
+  cb01:0,cb02:0,
+  // Geriátrica
+  g01:0,g02:0,g03:0,g04:0,g05:0,g06:0,g07:0,g08:0,g09:0,
 };
 
 // Preços da nota do representante
@@ -693,7 +727,7 @@ function save(data){
 
 function fmt(v){return 'R$ '+Number(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function pct(v){return Number(v).toFixed(1)+'%';}
-function marcaClass(m){return {Hipopó:'m-hipopo',Babysec:'m-babysec',MamyPoko:'m-mamypoko',Mili:'m-mili',Pampers:'m-pampers',Looping:'m-looping'}[m]||'m-babysec';}
+function marcaClass(m){return {Hipopó:'m-hipopo',Babysec:'m-babysec',MamyPoko:'m-mamypoko',Mili:'m-mili',Pampers:'m-pampers',Looping:'m-looping',ConfortBaby:'m-mili','Plenty Care':'m-mamypoko',Lifree:'m-hipopo',Confort:'m-babysec'}[m]||'m-babysec';}
 function margem(c,v){if(!c||!v)return null;return((v-c)/v)*100;}
 function statusEst(data,p){const q=data.estoques[p.id]||0;if(q===0)return 'comprar';if(q<=p.minimo)return 'atencao';return 'ok';}
 
@@ -799,7 +833,8 @@ function renderEstoque(filtro){
   const data=load();
   const marcas=['Todas',...new Set(data.produtos.map(p=>p.marca))];
   document.getElementById('filtro-est').innerHTML=marcas.map(m=>`<div class="filtro-btn ${filtroEst===m?'ativo':''}" onclick="renderEstoque('${m}')">${m}</div>`).join('');
-  const prods=filtroEst==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroEst);
+  let prods=filtroEst==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroEst);
+  prods=filtrarPorSecao(prods,_secaoEst);
   const total=prods.reduce((s,p)=>s+(data.estoques[p.id]||0),0);
   document.getElementById('est-sub').textContent=prods.length+' produtos · '+total+' pacotes';
   const labels={ok:'OK',atencao:'ATENÇÃO',comprar:'ZERADO'};
@@ -842,7 +877,8 @@ function renderPrecos(filtro){
   const data=load();
   const marcas=['Todas',...new Set(data.produtos.map(p=>p.marca))];
   document.getElementById('filtro-preco').innerHTML=marcas.map(m=>`<div class="filtro-btn ${filtroPreco===m?'ativo':''}" onclick="renderPrecos('${m}')">${m}</div>`).join('');
-  const prods=filtroPreco==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroPreco);
+  let prods=filtroPreco==='Todas'?data.produtos:data.produtos.filter(p=>p.marca===filtroPreco);
+  prods=filtrarPorSecao(prods,_secaoPreco);
   document.getElementById('lista-precos').innerHTML=`<div style="overflow-x:auto"><table>
     <tr><th>Produto</th><th>Cat.</th><th>Custo</th><th>Venda</th><th>Margem</th><th>Status</th><th></th></tr>
     ${prods.map(p=>{
@@ -1007,6 +1043,39 @@ function renderCompras(){
     </div>`;
   }).join('');
   document.getElementById('total-compras').textContent=total>0?fmt(total):'— (sem preços)';
+}
+
+// ── SEÇÃO (INFANTIL / GERIÁTRICA) ─────────────────────────────────────────────
+let _secaoEst = 'todas';
+let _secaoPreco = 'todas';
+
+function setSecaoEst(s) {
+  _secaoEst = s;
+  ['todas','infantil','geriatrica'].forEach(x => {
+    const el = document.getElementById('secao-est-'+x);
+    if(el) el.className = 'filtro-btn'+(s===x?' ativo':'');
+  });
+  renderEstoque();
+}
+
+function setSecaoPreco(s) {
+  _secaoPreco = s;
+  ['todas','infantil','geriatrica'].forEach(x => {
+    const el = document.getElementById('secao-preco-'+x);
+    if(el) el.className = 'filtro-btn'+(s===x?' ativo':'');
+  });
+  renderPrecos();
+}
+
+function secaoBadge(p) {
+  const s = p.secao || 'infantil';
+  if(s==='geriatrica') return '<span class="secao-geriatrica">🧓 Geriátrica</span>';
+  return '<span class="secao-infantil">👶 Infantil</span>';
+}
+
+function filtrarPorSecao(prods, secao) {
+  if(secao==='todas') return prods;
+  return prods.filter(p=>(p.secao||'infantil')===secao);
 }
 
 // ── IMPORTAR VENDAS INFARMA ───────────────────────────────────────────────────
