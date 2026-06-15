@@ -229,22 +229,7 @@ window.showSync = function(msg, cor) {
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fraldas MS Farma">
 <meta name="mobile-web-app-capable" content="yes">
-<link rel="manifest" href="data:application/json,{
-  &quot;name&quot;: &quot;Fraldas — MS Farma&quot;,
-  &quot;short_name&quot;: &quot;Fraldas&quot;,
-  &quot;description&quot;: &quot;Sistema de gestão de fraldas MS Farma&quot;,
-  &quot;start_url&quot;: &quot;/fraldas/&quot;,
-  &quot;display&quot;: &quot;standalone&quot;,
-  &quot;background_color&quot;: &quot;#0f172a&quot;,
-  &quot;theme_color&quot;: &quot;#0f172a&quot;,
-  &quot;orientation&quot;: &quot;portrait&quot;,
-  &quot;icons&quot;: [{
-    &quot;src&quot;: &quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text y='70' x='50' text-anchor='middle' font-size='60'>🍼</text></svg>&quot;,
-    &quot;sizes&quot;: &quot;any&quot;,
-    &quot;type&quot;: &quot;image/svg+xml&quot;,
-    &quot;purpose&quot;: &quot;any maskable&quot;
-  }]
-}">
+
 
 </head>
 <body>
@@ -1746,6 +1731,91 @@ function simularAumento() {
       </div>`).join('')}` : ''}
   `;
 }
+
+// ── ÍCONE PWA ─────────────────────────────────────────────────────────────────
+function gerarIconePWA() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 192;
+  canvas.height = 192;
+  const ctx = canvas.getContext('2d');
+  
+  // Fundo azul escuro com bordas arredondadas
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.roundRect(0, 0, 192, 192, 36);
+  ctx.fill();
+  
+  // Círculo accent
+  ctx.fillStyle = '#38bdf8';
+  ctx.beginPath();
+  ctx.arc(96, 82, 58, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Círculo interno
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(96, 82, 46, 0, Math.PI * 2);
+  ctx.fill();
+  
+  // Emoji mamadeira
+  ctx.font = '64px serif';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🍼', 96, 82);
+  
+  // Texto MS Farma
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 18px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('MS Farma', 96, 158);
+  
+  return canvas.toDataURL('image/png');
+}
+
+// Gera e aplica o ícone
+window.addEventListener('load', () => {
+  try {
+    const iconUrl = gerarIconePWA();
+    
+    // Apple touch icon
+    let appleIcon = document.querySelector('link[rel="apple-touch-icon"]');
+    if (!appleIcon) {
+      appleIcon = document.createElement('link');
+      appleIcon.rel = 'apple-touch-icon';
+      document.head.appendChild(appleIcon);
+    }
+    appleIcon.href = iconUrl;
+    
+    // Manifest dinâmico com ícone correto
+    const manifest = {
+      name: 'Fraldas — MS Farma',
+      short_name: 'Fraldas',
+      description: 'Sistema de gestão de fraldas MS Farma',
+      start_url: '/fraldas/',
+      display: 'standalone',
+      background_color: '#0f172a',
+      theme_color: '#0f172a',
+      orientation: 'portrait',
+      icons: [
+        { src: iconUrl, sizes: '192x192', type: 'image/png', purpose: 'any maskable' },
+        { src: iconUrl, sizes: '512x512', type: 'image/png', purpose: 'any maskable' }
+      ]
+    };
+    
+    const blob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+    const manifestUrl = URL.createObjectURL(blob);
+    
+    let manifestLink = document.querySelector('link[rel="manifest"]');
+    if (!manifestLink) {
+      manifestLink = document.createElement('link');
+      manifestLink.rel = 'manifest';
+      document.head.appendChild(manifestLink);
+    }
+    manifestLink.href = manifestUrl;
+  } catch(e) {
+    console.log('Ícone PWA:', e);
+  }
+});
 
 // ── PWA ───────────────────────────────────────────────────────────────────────
 // Service Worker para funcionamento offline
