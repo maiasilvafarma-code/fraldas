@@ -330,14 +330,29 @@ window.showSync = function(msg, cor) {
       <div class="card-titulo">📦 Comprar pouco vs muito do mesmo produto</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div><label>Produto</label><select id="cq-produto"></select></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><label>Opção A — Qtd pacotes</label><input type="number" id="cq-a-qtd" placeholder="Ex: 6" min="1"></div>
-          <div><label>Custo unit. A (R$)</label><input type="number" id="cq-a-custo" placeholder="0,00" step="0.01"></div>
+
+        <div style="background:var(--card2);border-radius:10px;padding:12px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:8px">OPÇÃO A</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label>Fardos</label><input type="number" id="cq-a-fardos" placeholder="Ex: 2" min="1" oninput="calcPacotesA()"></div>
+            <div><label>Pct/fardo</label><input type="number" id="cq-a-pct-fardo" placeholder="Ex: 6" min="1" oninput="calcPacotesA()"></div>
+            <div><label>Total pct</label><input type="number" id="cq-a-qtd" placeholder="—" min="1" style="background:var(--borda)"></div>
+          </div>
+          <div style="margin-top:8px"><label>Custo por pacote (R$)</label><input type="number" id="cq-a-custo" placeholder="0,00" step="0.01"></div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:6px" id="cq-a-total-label"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div><label>Opção B — Qtd pacotes</label><input type="number" id="cq-b-qtd" placeholder="Ex: 12" min="1"></div>
-          <div><label>Custo unit. B (R$)</label><input type="number" id="cq-b-custo" placeholder="0,00" step="0.01"></div>
+
+        <div style="background:var(--card2);border-radius:10px;padding:12px">
+          <div style="font-size:.72rem;font-weight:700;color:var(--accent);margin-bottom:8px">OPÇÃO B</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+            <div><label>Fardos</label><input type="number" id="cq-b-fardos" placeholder="Ex: 4" min="1" oninput="calcPacotesB()"></div>
+            <div><label>Pct/fardo</label><input type="number" id="cq-b-pct-fardo" placeholder="Ex: 6" min="1" oninput="calcPacotesB()"></div>
+            <div><label>Total pct</label><input type="number" id="cq-b-qtd" placeholder="—" min="1" style="background:var(--borda)"></div>
+          </div>
+          <div style="margin-top:8px"><label>Custo por pacote (R$)</label><input type="number" id="cq-b-custo" placeholder="0,00" step="0.01"></div>
+          <div style="font-size:.7rem;color:var(--muted);margin-top:6px" id="cq-b-total-label"></div>
         </div>
+
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="calcQtd()">⚖️ Comparar</button>
       </div>
     </div>
@@ -348,6 +363,7 @@ window.showSync = function(msg, cor) {
       <div class="card-titulo">🏭 Mesmo produto, dois fornecedores</div>
       <div style="display:flex;flex-direction:column;gap:10px">
         <div><label>Produto</label><select id="cf-produto"></select></div>
+
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div><label>Fornecedor A</label><input type="text" id="cf-a-nome" placeholder="Ex: Dist. Norte"></div>
           <div><label>Preço unit. A (R$)</label><input type="number" id="cf-a-preco" placeholder="0,00" step="0.01"></div>
@@ -356,7 +372,12 @@ window.showSync = function(msg, cor) {
           <div><label>Fornecedor B</label><input type="text" id="cf-b-nome" placeholder="Ex: Dist. Sul"></div>
           <div><label>Preço unit. B (R$)</label><input type="number" id="cf-b-preco" placeholder="0,00" step="0.01"></div>
         </div>
-        <div><label>Quantidade que vai comprar</label><input type="number" id="cf-qtd" placeholder="Ex: 10" min="1"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div><label>Fardos</label><input type="number" id="cf-fardos" placeholder="Ex: 2" min="1" oninput="calcPacotesForn()"></div>
+          <div><label>Pacotes por fardo</label><input type="number" id="cf-pct-fardo" placeholder="Ex: 6" min="1" oninput="calcPacotesForn()"></div>
+        </div>
+        <div><label>Total de pacotes</label><input type="number" id="cf-qtd" placeholder="—" min="1" style="background:var(--borda)"></div>
+        <div style="font-size:.7rem;color:var(--muted)" id="cf-total-label"></div>
         <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="calcForn()">⚖️ Comparar</button>
       </div>
     </div>
@@ -739,9 +760,7 @@ const PRODUTOS_INICIAIS = [
   {id:'lo02',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'G',minimo:3,obs:'Descontinuado',secao:'infantil'},
   {id:'lo03',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XG',minimo:3,obs:'Descontinuado',secao:'infantil'},
   {id:'lo04',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XXG',minimo:3,obs:'Descontinuado',secao:'infantil'},
-  // Babysec Ultrasec Shortinho Mega (infantil)
-  {id:'b24',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'G',minimo:3,obs:'',secao:'infantil'},
-  {id:'b25',marca:'Babysec',linha:'Ultrasec Shortinho Mega',tipo:'SHORTINHO',tam:'M',minimo:3,obs:'',secao:'infantil'},
+
   // ConfortBaby (infantil)
   {id:'cb01',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'M',minimo:3,obs:'',secao:'infantil'},
   {id:'cb02',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'EG',minimo:3,obs:'',secao:'infantil'},
@@ -791,8 +810,7 @@ const ESTOQUE_INICIAL = {
   mp01:2,mp02:3,
   // Looping
   lo01:4,lo02:3,lo03:4,lo04:4,
-  // Babysec Ultrasec Shortinho Mega novos
-  b24:0,b25:0,
+
   // ConfortBaby
   cb01:0,cb02:0,
   // Geriátrica
@@ -2361,6 +2379,38 @@ function preencherCustoAtual(selId, inputId) {
   const pid = document.getElementById(selId).value;
   const pr = data.precos[pid]||{};
   if(pr.custo) document.getElementById(inputId).value = pr.custo;
+}
+
+function calcPacotesForn() {
+  const fardos = Number(document.getElementById('cf-fardos').value)||0;
+  const pctFardo = Number(document.getElementById('cf-pct-fardo').value)||0;
+  const total = fardos * pctFardo;
+  document.getElementById('cf-qtd').value = total || '';
+  if (total) {
+    document.getElementById('cf-total-label').textContent = fardos + ' fardos × ' + pctFardo + ' pct/fardo = ' + total + ' pacotes';
+  }
+}
+
+function calcPacotesA() {
+  const fardos = Number(document.getElementById('cq-a-fardos').value)||0;
+  const pctFardo = Number(document.getElementById('cq-a-pct-fardo').value)||0;
+  const total = fardos * pctFardo;
+  document.getElementById('cq-a-qtd').value = total || '';
+  const custo = parseFloat(document.getElementById('cq-a-custo').value)||0;
+  if (total && custo) {
+    document.getElementById('cq-a-total-label').textContent = 'Total: ' + fardos + ' fardos × ' + pctFardo + ' pct = ' + total + ' pacotes · Custo total: R$ ' + (custo*total).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }
+}
+
+function calcPacotesB() {
+  const fardos = Number(document.getElementById('cq-b-fardos').value)||0;
+  const pctFardo = Number(document.getElementById('cq-b-pct-fardo').value)||0;
+  const total = fardos * pctFardo;
+  document.getElementById('cq-b-qtd').value = total || '';
+  const custo = parseFloat(document.getElementById('cq-b-custo').value)||0;
+  if (total && custo) {
+    document.getElementById('cq-b-total-label').textContent = 'Total: ' + fardos + ' fardos × ' + pctFardo + ' pct = ' + total + ' pacotes · Custo total: R$ ' + (custo*total).toLocaleString('pt-BR',{minimumFractionDigits:2});
+  }
 }
 
 function setModo(modo) {
