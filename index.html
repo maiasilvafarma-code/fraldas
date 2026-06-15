@@ -222,6 +222,30 @@ window.showSync = function(msg, cor) {
 </script>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<!-- PWA -->
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Fraldas MS Farma">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="manifest" href="data:application/json,{
+  &quot;name&quot;: &quot;Fraldas — MS Farma&quot;,
+  &quot;short_name&quot;: &quot;Fraldas&quot;,
+  &quot;description&quot;: &quot;Sistema de gestão de fraldas MS Farma&quot;,
+  &quot;start_url&quot;: &quot;/fraldas/&quot;,
+  &quot;display&quot;: &quot;standalone&quot;,
+  &quot;background_color&quot;: &quot;#0f172a&quot;,
+  &quot;theme_color&quot;: &quot;#0f172a&quot;,
+  &quot;orientation&quot;: &quot;portrait&quot;,
+  &quot;icons&quot;: [{
+    &quot;src&quot;: &quot;data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f172a'/><text y='70' x='50' text-anchor='middle' font-size='60'>🍼</text></svg>&quot;,
+    &quot;sizes&quot;: &quot;any&quot;,
+    &quot;type&quot;: &quot;image/svg+xml&quot;,
+    &quot;purpose&quot;: &quot;any maskable&quot;
+  }]
+}">
+
 </head>
 <body>
 <header>
@@ -1722,6 +1746,68 @@ function simularAumento() {
       </div>`).join('')}` : ''}
   `;
 }
+
+// ── PWA ───────────────────────────────────────────────────────────────────────
+// Service Worker para funcionamento offline
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'fraldas-msfarma-v1';
+    const URLS = ['/fraldas/'];
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(URLS)));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))));
+      self.clients.claim();
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(fetch(e.request).catch(()=>caches.match(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], {type:'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// Botão de instalar app
+let _installPrompt = null;
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  // Mostra banner de instalação
+  const banner = document.createElement('div');
+  banner.id = 'pwa-banner';
+  banner.style.cssText = 'position:fixed;bottom:60px;left:16px;right:16px;background:#1e293b;border:1px solid #38bdf8;border-radius:12px;padding:12px 16px;display:flex;align-items:center;gap:10px;z-index:300;box-shadow:0 4px 20px rgba(0,0,0,.5)';
+  banner.innerHTML = `
+    <span style="font-size:1.5rem">🍼</span>
+    <div style="flex:1">
+      <div style="font-size:.82rem;font-weight:700;color:#f1f5f9">Instalar como app</div>
+      <div style="font-size:.7rem;color:#94a3b8">Acesso rápido na tela inicial</div>
+    </div>
+    <button onclick="instalarPWA()" style="background:#38bdf8;color:#0f172a;border:none;border-radius:8px;padding:7px 14px;font-size:.78rem;font-weight:700;cursor:pointer">Instalar</button>
+    <button onclick="document.getElementById('pwa-banner').remove()" style="background:none;border:none;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:0 4px">×</button>
+  `;
+  document.body.appendChild(banner);
+  // Remove banner após 10 segundos
+  setTimeout(()=>{ const b=document.getElementById('pwa-banner'); if(b) b.remove(); }, 10000);
+});
+
+function instalarPWA() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(()=>{ 
+    _installPrompt = null;
+    const b=document.getElementById('pwa-banner');
+    if(b) b.remove();
+  });
+}
+
+window.addEventListener('appinstalled', ()=>{
+  const b=document.getElementById('pwa-banner');
+  if(b) b.remove();
+  showSync && showSync('✅ App instalado com sucesso!','ok');
+});
 
 // ── BACKUP ────────────────────────────────────────────────────────────────────
 function exportarBackup() {
