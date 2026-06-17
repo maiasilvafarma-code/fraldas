@@ -2053,10 +2053,11 @@ function identificarProduto(descricao, produtos) {
 
     // Confort Mast Econ G/M/EG
     if (p.marca === 'Confort' && p.linha === 'Mast Econ') {
-      if (!d.includes('CONF MASTER ECON') && !d.includes('CONFORT MAST ECON')) continue;
-      if (p.tam === 'G' && d.includes(' G ')) return p;
+      const temEcon = d.includes('CONF MASTER ECON') || d.includes('CONFORT MAST ECON') || (d.includes('CONF MASTER') && d.includes('ECON'));
+      if (!temEcon) continue;
+      if (p.tam === 'G' && d.includes(' G ') && !d.includes('EG')) return p;
       if (p.tam === 'M' && d.includes(' M ')) return p;
-      if (p.tam === 'EG' && d.includes('EG')) return p;
+      if (p.tam === 'EG' && (d.includes('EG') || d.includes(' EG'))) return p;
     }
 
     // Plenty Care Roupa Íntima
