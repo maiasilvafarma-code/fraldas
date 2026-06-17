@@ -194,7 +194,7 @@ onSnapshot(DOC_REF, (snap) => {
       const idx = [...document.querySelectorAll('.tab')].indexOf(abaAtiva);
       const tabs = ['dashboard','estoque','precos','vendas','compras','comparador','relatorio','alertas','importar','integracao'];
       if (tabs[idx]) {
-        const renders = {dashboard:renderDashboard,estoque:()=>renderEstoque(),precos:()=>renderPrecos(),vendas:renderVendas,compras:renderCompras,relatorio:()=>{if(typeof initRelatorio==='function')initRelatorio();}};
+        const renders = {dashboard:renderDashboard,estoque:()=>{renderEstoque();const d=load();renderAlertasValidade(d);},precos:()=>renderPrecos(),vendas:renderVendas,compras:renderCompras,relatorio:()=>{if(typeof initRelatorio==='function')initRelatorio();}};
         if (renders[tabs[idx]]) renders[tabs[idx]]();
       }
     }
@@ -255,8 +255,16 @@ window.showSync = function(msg, cor) {
 <div id="sec-dashboard" class="sec ativo">
   <div id="dash-alertas"></div>
   <div class="kpi-grid" id="dash-kpis"></div>
+  <div id="dash-meta" style="margin-bottom:10px"></div>
   <div class="card"><div class="card-titulo">💲 Saúde das Margens</div><div id="dash-margens-saude"></div></div>
   <div class="card"><div class="card-titulo">🚦 Situação por Marca</div><div id="dash-marcas"></div></div>
+  <div class="card" id="card-meta-config" style="display:none">
+    <div class="card-titulo">🎯 Configurar Meta Mensal</div>
+    <div style="display:flex;gap:10px;align-items:flex-end;margin-top:8px">
+      <div style="flex:1"><label>Meta de faturamento (R$)</label><input type="number" id="meta-valor" placeholder="Ex: 5000" step="100"></div>
+      <button class="btn btn-primary" onclick="salvarMeta()">Salvar</button>
+    </div>
+  </div>
   <div class="card"><div class="card-titulo">🔴 Urgente — Comprar Agora</div><div id="dash-urgentes"></div></div>
   <div class="card"><div class="card-titulo">📈 Top Giro — Mais vendidos</div><div id="dash-top-giro"></div></div>
   <div class="card"><div class="card-titulo">💸 Capital Parado — Estoque encalhado</div><div id="dash-capital-parado"></div></div>
@@ -619,6 +627,25 @@ window.showSync = function(msg, cor) {
   </div>
 </div>
 
+
+<!-- MODAL VALIDADE -->
+<div class="modal-bg" id="modal-validade">
+  <div class="modal">
+    <div class="modal-titulo">📅 Registrar Validade de Lote</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div><label>Produto</label><select id="val-produto"></select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Validade</label><input type="date" id="val-data"></div>
+        <div><label>Quantidade (pct)</label><input type="number" id="val-qtd" placeholder="Ex: 5" min="1"></div>
+      </div>
+      <div><label>Observação (opcional)</label><input type="text" id="val-obs" placeholder="Ex: Lote A, NF 12345"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-validade')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarValidade()">Registrar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL NOVO PRODUTO -->
 <div class="modal-bg" id="modal-novo-produto">
@@ -1067,6 +1094,9 @@ function renderDashboard(){
       </div></div>`;
   }).join('');
 
+  // Meta mensal
+  renderMeta(data);
+
   // Top giro
   const girosCalc = prods.map(p=>({p, giro:calcularGiro(data,p.id)}))
     .filter(x=>x.giro).sort((a,b)=>b.giro.mediasMensal-a.giro.mediasMensal).slice(0,5);
@@ -1164,6 +1194,8 @@ function renderEstoque(filtro){
     }).join('')}
   </table></div>
   <div style="font-size:.68rem;color:var(--muted);margin-top:6px">🤖 = mínimo pelo giro real · Dias = cobertura do estoque atual (🔴+90d 🟡+60d 🟢ok)</div>`;
+  // Alertas de validade
+  renderAlertasValidade(data);
 }
 
 function abrirModalEstoque(){
@@ -1579,6 +1611,141 @@ function filtrarPorSecao(prods, secao) {
   return prods.filter(p=>(p.secao||'infantil')===secao);
 }
 
+// ── META DE VENDAS ────────────────────────────────────────────────────────────
+function renderMeta(data) {
+  const meta = (data.configuracoes||{}).metaMensal||0;
+  const el = document.getElementById('dash-meta');
+  if (!el) return;
+
+  // Calcula faturamento do mês atual
+  const agora = new Date();
+  const mesAtual = agora.getFullYear()+'-'+String(agora.getMonth()+1).padStart(2,'0');
+  const vendasMes = (data.vendas||[]).filter(v=>{
+    const d = new Date(v.data);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    return key === mesAtual;
+  });
+  const fatMes = vendasMes.reduce((s,v)=>{
+    const p = data.produtos.find(x=>x.id===v.produtoId);
+    const pr = p ? data.precos[p.id]||{} : {};
+    return s + (pr.venda ? pr.venda*v.qtd : 0);
+  },0);
+
+  if (!meta) {
+    el.innerHTML = '<div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border-radius:10px;border:1px solid var(--borda)"><span style="font-size:.8rem;color:var(--muted);flex:1">Defina uma meta mensal de faturamento</span><button class="btn btn-ghost" style="font-size:.72rem" onclick="abrirConfigMeta()">🎯 Definir meta</button></div>';
+    return;
+  }
+
+  const pct2 = Math.min(Math.round((fatMes/meta)*100),100);
+  const cor = pct2 >= 100 ? 'var(--verde)' : pct2 >= 70 ? 'var(--accent)' : pct2 >= 40 ? 'var(--amarelo)' : 'var(--vermelho)';
+  const emoji = pct2 >= 100 ? '🏆' : pct2 >= 70 ? '💪' : pct2 >= 40 ? '⚡' : '🎯';
+
+  el.innerHTML = '<div style="background:var(--card);border-radius:10px;padding:12px 14px;border:1px solid var(--borda)">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">'
+    + '<div style="font-size:.75rem;font-weight:700;color:var(--muted)">'+emoji+' META MENSAL</div>'
+    + '<button onclick="abrirConfigMeta()" style="background:none;border:none;color:var(--muted);font-size:.7rem;cursor:pointer">✏️ editar</button>'
+    + '</div>'
+    + '<div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:6px">'
+    + '<span style="color:'+cor+';font-weight:800">'+fmt(fatMes)+' <span style="font-size:.65rem;font-weight:400;color:var(--muted)">de '+fmt(meta)+'</span></span>'
+    + '<span style="font-weight:800;color:'+cor+'">'+pct2+'%</span>'
+    + '</div>'
+    + '<div style="height:8px;border-radius:4px;background:var(--borda)">'
+    + '<div style="height:100%;border-radius:4px;width:'+pct2+'%;background:'+cor+';transition:width .5s"></div>'
+    + '</div>'
+    + (pct2 < 100 ? '<div style="font-size:.68rem;color:var(--muted);margin-top:5px">Falta '+fmt(meta-fatMes)+' para a meta</div>' : '<div style="font-size:.68rem;color:var(--verde);margin-top:5px">✅ Meta atingida!</div>')
+    + '</div>';
+}
+
+function abrirConfigMeta() {
+  document.getElementById('card-meta-config').style.display = 'block';
+  document.getElementById('card-meta-config').scrollIntoView({behavior:'smooth'});
+}
+
+function salvarMeta() {
+  const val = parseFloat(document.getElementById('meta-valor').value)||0;
+  if (!val) { alert('Informe o valor da meta!'); return; }
+  const data = load();
+  if (!data.configuracoes) data.configuracoes = {};
+  data.configuracoes.metaMensal = val;
+  save(data);
+  document.getElementById('card-meta-config').style.display = 'none';
+  renderMeta(data);
+  alert('✅ Meta de '+fmt(val)+'/mês definida!');
+}
+
+// ── CONTROLE DE VALIDADE ──────────────────────────────────────────────────────
+function abrirModalValidade() {
+  const data = load();
+  const sel = document.getElementById('val-produto');
+  sel.innerHTML = data.produtos.map(p=>'<option value="'+p.id+'">'+p.marca+' '+p.linha+' '+p.tam+'</option>').join('');
+  // Data mínima = hoje
+  const hoje = new Date().toISOString().split('T')[0];
+  document.getElementById('val-data').min = hoje;
+  document.getElementById('val-data').value = '';
+  document.getElementById('val-qtd').value = '';
+  document.getElementById('val-obs').value = '';
+  document.getElementById('modal-validade').classList.add('aberto');
+}
+
+function salvarValidade() {
+  const pid = document.getElementById('val-produto').value;
+  const dataVal = document.getElementById('val-data').value;
+  const qtd = parseInt(document.getElementById('val-qtd').value)||0;
+  const obs = document.getElementById('val-obs').value.trim();
+  if (!dataVal) { alert('Informe a data de validade!'); return; }
+  if (!qtd) { alert('Informe a quantidade!'); return; }
+  const data = load();
+  if (!data.validades) data.validades = [];
+  data.validades.push({
+    id: Date.now().toString(),
+    produtoId: pid,
+    validade: dataVal,
+    qtd,
+    obs,
+    registrado: new Date().toISOString()
+  });
+  save(data);
+  fecharModal('modal-validade');
+  renderAlertasValidade(data);
+  alert('✅ Validade registrada!');
+}
+
+function renderAlertasValidade(data) {
+  const el = document.getElementById('painel-validade');
+  if (!el) return;
+  const validades = data.validades||[];
+  if (validades.length === 0) { el.innerHTML = ''; return; }
+
+  const hoje = new Date();
+  const em30 = new Date(hoje.getTime() + 30*24*60*60*1000);
+  const em60 = new Date(hoje.getTime() + 60*24*60*60*1000);
+
+  const alertas = validades.map(v=>{
+    const p = data.produtos.find(x=>x.id===v.produtoId);
+    const dataV = new Date(v.validade+'T00:00:00');
+    const dias = Math.round((dataV-hoje)/(24*60*60*1000));
+    return {...v, p, dias, dataV};
+  }).filter(v=>v.dias<=60).sort((a,b)=>a.dias-b.dias);
+
+  if (alertas.length === 0) { el.innerHTML = ''; return; }
+
+  el.innerHTML = '<div class="card" style="border:1px solid var(--amarelo)">'
+    + '<div class="card-titulo">📅 Alertas de Validade</div>'
+    + alertas.map(v=>{
+        const cor = v.dias <= 0 ? 'var(--vermelho)' : v.dias <= 30 ? 'var(--amarelo)' : 'var(--accent)';
+        const status = v.dias <= 0 ? '🔴 VENCIDO' : v.dias <= 30 ? '🟡 '+v.dias+'d' : '🔵 '+v.dias+'d';
+        const nome = v.p ? v.p.marca+' '+v.p.linha+' '+v.p.tam : 'Produto';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--borda)">'
+          + '<div style="flex:1">'
+          + '<div style="font-size:.78rem;font-weight:700">'+nome+'</div>'
+          + '<div style="font-size:.68rem;color:var(--muted)">'+v.qtd+' pct · Val: '+new Date(v.validade+'T00:00:00').toLocaleDateString('pt-BR')+(v.obs?' · '+v.obs:'')+'</div>'
+          + '</div>'
+          + '<span style="font-size:.78rem;font-weight:700;color:'+cor+'">'+status+'</span>'
+          + '</div>';
+      }).join('')
+    + '</div>';
+}
+
 // ── COMPARATIVO MÊS A MÊS ────────────────────────────────────────────────────
 function renderComparativo(data) {
   const vendas = data.vendas||[];
@@ -1620,26 +1787,20 @@ function renderComparativo(data) {
     const seta = (v) => v > 0 ? '📈' : v < 0 ? '📉' : '➡️';
     const fmt2 = (v) => (v > 0 ? '+' : '') + v.toFixed(1) + '%';
 
-    html2 += `<div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px">
-      <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--accent)">${ant.label} → ${atu.label}</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
-        <div>
-          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">PACOTES</div>
-          <div style="font-size:.9rem;font-weight:800">${atu.qtd}</div>
-          <div style="font-size:.72rem;color:${cor(varQtd)};font-weight:700">${seta(varQtd)} ${fmt2(varQtd)}</div>
-        </div>
-        <div>
-          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">FATURAMENTO</div>
-          <div style="font-size:.9rem;font-weight:800">${fmt(atu.faturamento)||'—'}</div>
-          <div style="font-size:.72rem;color:${cor(varFat)};font-weight:700">${seta(varFat)} ${fmt2(varFat)}</div>
-        </div>
-        <div>
-          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">LUCRO EST.</div>
-          <div style="font-size:.9rem;font-weight:800">${fmt(atu.lucro)||'—'}</div>
-          <div style="font-size:.72rem;color:${cor(varLuc)};font-weight:700">${seta(varLuc)} ${fmt2(varLuc)}</div>
-        </div>
-      </div>
-    </div>`;
+    const rowHtml = '<div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px">'
+      + '<div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--accent)">'+ant.label+' → '+atu.label+'</div>'
+      + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">'
+      + '<div><div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">PACOTES</div>'
+      + '<div style="font-size:.9rem;font-weight:800">'+atu.qtd+'</div>'
+      + '<div style="font-size:.72rem;color:'+cor(varQtd)+';font-weight:700">'+seta(varQtd)+' '+fmt2(varQtd)+'</div></div>'
+      + '<div><div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">FATURAMENTO</div>'
+      + '<div style="font-size:.9rem;font-weight:800">'+(fmt(atu.faturamento)||'—')+'</div>'
+      + '<div style="font-size:.72rem;color:'+cor(varFat)+';font-weight:700">'+seta(varFat)+' '+fmt2(varFat)+'</div></div>'
+      + '<div><div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">LUCRO EST.</div>'
+      + '<div style="font-size:.9rem;font-weight:800">'+(fmt(atu.lucro)||'—')+'</div>'
+      + '<div style="font-size:.72rem;color:'+cor(varLuc)+';font-weight:700">'+seta(varLuc)+' '+fmt2(varLuc)+'</div></div>'
+      + '</div></div>';
+    html2 += rowHtml;
   }
 
   document.getElementById('rel-comparativo').innerHTML = html2;
@@ -2079,15 +2240,12 @@ function enviarWhatsApp() {
 `;
     itens.forEach(({p, q, repor}) => {
       const zerado = q === 0 ? '🔴' : '🟡';
-      msg += `${zerado} ${p.linha} ${p.tam} — pedir ${repor} pct (estoque: ${q})
-`;
+      msg += zerado+' '+p.linha+' '+p.tam+' — pedir '+repor+' pct (estoque: '+q+')\n';
     });
-    msg += '
-';
+    msg += '\n';
   });
 
-  msg += `_Total: ${precisam.length} produtos_
-_Enviado pelo sistema MS Farma_`;
+  msg += '_Total: '+precisam.length+' produtos_\n_Enviado pelo sistema MS Farma_';
 
   const encoded = encodeURIComponent(msg);
   window.open('https://wa.me/?text=' + encoded, '_blank');
