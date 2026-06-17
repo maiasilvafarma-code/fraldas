@@ -273,7 +273,11 @@ window.showSync = function(msg, cor) {
 <div id="sec-estoque" class="sec">
   <div class="flex-entre">
     <div><div class="sec-title">🏪 Estoque</div><div class="sec-sub" id="est-sub"></div></div>
-    <button class="btn btn-ghost" onclick="abrirModalEstoque()">✏️ Atualizar</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-ghost" onclick="abrirModalNovoProduto()">+ Produto</button>
+      <button class="btn btn-ghost" onclick="abrirModalValidade()">📅 Validade</button>
+      <button class="btn btn-primary" onclick="abrirModalEstoque()">✏️ Atualizar</button>
+    </div>
   </div>
   <div style="display:flex;gap:8px;margin-bottom:8px">
     <div class="filtro-btn ativo" id="secao-est-todas" onclick="setSecaoEst('todas')">Todas</div>
