@@ -1920,7 +1920,7 @@ function salvarNovoProduto() {
 // ── IMPORTAR NF-e XML ─────────────────────────────────────────────────────────
 let _xmlCache = [];
 
-const PALAVRAS_FRALDA = ['FRALDA','HIPOPO','BABYSEC','MILI','PAMPERS','MAMYPOKO','LOOPING','CONFORTBABY','PLENTY CARE','LIFREE','CONFORT MAST','LOONEY'];
+const PALAVRAS_FRALDA = ['FRALDA','HIPOPO','BABYSEC','MILI','PAMPERS','MAMYPOKO','LOOPING','CONFORTBABY','PLENTY CARE','LIFREE','CONFORT MAST','LOONEY','CONF MASTER','PLENTY'];
 
 function lerArquivoXML(input) {
   const file = input.files[0];
@@ -2041,8 +2041,60 @@ let _importCache = [];
 function identificarProduto(descricao, produtos) {
   const d = descricao.toUpperCase();
   
+  // Match especial para produtos geriátricos pelo nome da linha
+  for (const p of produtos) {
+    if ((p.secao||'infantil') !== 'geriatrica') continue;
+    const tam = p.tam.toUpperCase();
+    
+    // Confort Mast / CONF MASTER
+    if (p.id === 'g01' && (d.includes('CONF MASTER') || d.includes('CONFORT MAST')) && d.includes('REG')) return p;
+    
+    // Plenty Care Roupa Íntima
+    if (p.marca === 'Plenty Care' && p.linha.includes('Roupa')) {
+      if (!d.includes('ROUPA') && !d.includes('INT PLENTY')) continue;
+      const temPM = d.includes('P/M') || (d.includes('P') && d.includes('M') && !d.includes('G/XG'));
+      const temGXG = d.includes('G/XG') || d.includes('GXG');
+      const tem32 = d.includes('32');
+      if (p.tam === 'P/M 16und' && temPM && !tem32) return p;
+      if (p.tam === 'P/M 32und' && temPM && tem32) return p;
+      if (p.tam === 'G/XG 16und' && temGXG && !tem32) return p;
+    }
+    
+    // Plenty Care Pants Premium
+    if (p.marca === 'Plenty Care' && p.linha.includes('Pants')) {
+      if (!d.includes('PANTS') && !d.includes('PREMIUM')) continue;
+      const temPM = d.includes('P/M') || d.includes('PM');
+      const temGXG = d.includes('G/XG') || d.includes('GXG');
+      const tem32 = d.includes('32');
+      if (p.tam === 'P/M 16und' && temPM && !tem32) return p;
+      if (p.tam === 'P/M 32und' && temPM && tem32) return p;
+      if (p.tam === 'G/XG 16und' && temGXG && !tem32) return p;
+      if (p.tam === 'G/XG 32und' && temGXG && tem32) return p;
+    }
+    
+    // Lifree Super Conforto Jumbo
+    if (p.marca === 'Lifree' && p.linha.includes('Super Conforto')) {
+      if (!d.includes('LIFREE')) continue;
+      const temPM = d.includes('P/M') || d.includes('PM');
+      const temGXG = d.includes('G/XG') || d.includes('GXG');
+      if (p.tam === 'P/M 16und' && temPM) return p;
+      if (p.tam === 'G/XG 16und' && temGXG) return p;
+    }
+
+    // Confort Mast Econ
+    if (p.marca === 'Confort' && d.includes('CONF MASTER') && d.includes('ECON')) {
+      const temM = d.includes(' M ') || d.includes('M30');
+      const temG = d.includes(' G ') || d.includes('G30');
+      const temEG = d.includes('EG') || d.includes('26');
+      if (p.tam === 'M' && temM) return p;
+      if (p.tam === 'G' && temG) return p;
+      if (p.tam === 'EG' && temEG) return p;
+    }
+  }
+
   // Tenta match direto por palavras-chave
   for (const p of produtos) {
+    if ((p.secao||'infantil') === 'geriatrica') continue; // já tratados acima
     const marca = p.marca.toUpperCase();
     const linha = p.linha.toUpperCase();
     const tam = p.tam.toUpperCase();
