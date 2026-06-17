@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🍼 Fraldas — MS Farma</title>
+<title>🍼 MS Fraldas</title>
 <style>
   :root {
     --verde:#22c55e;--amarelo:#f59e0b;--vermelho:#ef4444;
@@ -235,7 +235,7 @@ window.showSync = function(msg, cor) {
 <body>
 <header>
   <span>🍼</span>
-  <h1>Fraldas — MS Farma</h1>
+  <h1>MS Fraldas</h1>
   <span class="data" id="data-hoje"></span>
 </header>
 <div class="tabs">
@@ -549,8 +549,11 @@ window.showSync = function(msg, cor) {
 
   <div class="card">
     <div class="card-titulo">🧾 Importar NF-e XML — Nota do Fornecedor</div>
-    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:8px">
       Importa a nota fiscal XML do fornecedor — atualiza estoque e custo automaticamente
+    </div>
+    <div style="background:#2d1a00;border:1px solid var(--amarelo);border-radius:8px;padding:10px;margin-bottom:12px;font-size:.75rem;color:var(--amarelo)">
+      ⚠️ <strong>Atenção:</strong> o XML <strong>soma</strong> ao estoque atual. Não importe uma nota se já atualizou o estoque manualmente com esses produtos — vai duplicar!
     </div>
     <input type="file" id="imp-xml-file" accept=".xml" style="display:none" onchange="lerArquivoXML(this)">
     <button class="btn btn-primary" style="width:100%;justify-content:center;background:var(--roxo)" onclick="document.getElementById('imp-xml-file').click()">
@@ -864,6 +867,10 @@ const PRODUTOS_INICIAIS = [
   {id:'lo02',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'G',minimo:3,obs:'Descontinuado',secao:'infantil'},
   {id:'lo03',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XG',minimo:3,obs:'Descontinuado',secao:'infantil'},
   {id:'lo04',marca:'Looping',linha:'Looney Tunes Leve+Pague-',tipo:'FITA',tam:'XXG',minimo:3,obs:'Descontinuado',secao:'infantil'},
+  {id:'lo05',marca:'Looping',linha:'Looney Tunes Hiper',tipo:'FITA',tam:'M',minimo:3,obs:'',secao:'infantil'},
+  {id:'lo06',marca:'Looping',linha:'Looney Tunes Hiper',tipo:'FITA',tam:'G',minimo:3,obs:'',secao:'infantil'},
+  {id:'lo07',marca:'Looping',linha:'Looney Tunes Hiper',tipo:'FITA',tam:'XG',minimo:3,obs:'',secao:'infantil'},
+  {id:'lo08',marca:'Looping',linha:'Looney Tunes Hiper',tipo:'FITA',tam:'XXG',minimo:3,obs:'',secao:'infantil'},
 
   // ConfortBaby (infantil)
   {id:'cb01',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'M',minimo:3,obs:'',secao:'infantil'},
@@ -874,6 +881,8 @@ const PRODUTOS_INICIAIS = [
   {id:'g03',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g04',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g05',marca:'Lifree',linha:'Calça Extra Mega',tipo:'FITA',tam:'P/M',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g10',marca:'Lifree',linha:'Geriátrica Super Conforto Jumbo',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g11',marca:'Lifree',linha:'Geriátrica Super Conforto Jumbo',tipo:'FITA',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g06',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g07',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g08',marca:'Plenty Care',linha:'Pants Premium',tipo:'SHORTINHO',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
@@ -914,6 +923,8 @@ const ESTOQUE_INICIAL = {
   mp01:2,mp02:3,
   // Looping
   lo01:4,lo02:3,lo03:4,lo04:4,
+  lo05:0,lo06:0,lo07:0,lo08:0,
+  g10:0,g11:0,
 
   // ConfortBaby
   cb01:0,cb02:0,
@@ -964,6 +975,12 @@ const PRECOS_INICIAIS = {
   // Mili RN
   m05:{custo:15.29,venda:0},
 };
+
+function migrarDados(data) {
+  // Garante que todos os produtos do PRODUTOS_INICIAIS existem
+  data.produtos = PRODUTOS_INICIAIS;
+  return data;
+}
 
 function load() {
   if (window._dbCache) return window._dbCache;
@@ -1903,7 +1920,7 @@ function salvarNovoProduto() {
 // ── IMPORTAR NF-e XML ─────────────────────────────────────────────────────────
 let _xmlCache = [];
 
-const PALAVRAS_FRALDA = ['FRALDA','HIPOPO','BABYSEC','MILI','PAMPERS','MAMYPOKO','LOOPING','CONFORTBABY','PLENTY CARE','LIFREE','CONFORT MAST'];
+const PALAVRAS_FRALDA = ['FRALDA','HIPOPO','BABYSEC','MILI','PAMPERS','MAMYPOKO','LOOPING','CONFORTBABY','PLENTY CARE','LIFREE','CONFORT MAST','LOONEY'];
 
 function lerArquivoXML(input) {
   const file = input.files[0];
@@ -1991,18 +2008,28 @@ function confirmarImportacaoXML() {
   if (!_xmlCache || !_xmlCache.fraldas) return;
   const data = load();
 
+  // Verifica se NF já foi importada
+  const nfKey = _xmlCache.nNF + '_' + _xmlCache.fornecedor;
+  if (!data.nfsImportadas) data.nfsImportadas = [];
+  if (data.nfsImportadas.includes(nfKey)) {
+    if (!confirm('⚠️ Atenção! Esta nota (NF ' + _xmlCache.nNF + ') parece já ter sido importada antes. Importar novamente vai DUPLICAR o estoque. Tem certeza?')) {
+      return;
+    }
+  }
+
   _xmlCache.fraldas.forEach(v => {
-    // Atualiza estoque (soma)
     data.estoques[v.p.id] = (data.estoques[v.p.id]||0) + v.qtd;
-    // Atualiza custo
     if (!data.precos[v.p.id]) data.precos[v.p.id] = {};
     data.precos[v.p.id].custo = v.custo;
   });
 
+  // Registra NF como importada
+  data.nfsImportadas.push(nfKey);
+
   save(data);
   _xmlCache = [];
   document.getElementById('imp-xml-preview').style.display = 'none';
-  document.getElementById('imp-xml-status').textContent = '✅ Estoque e custos atualizados!';
+  document.getElementById('imp-xml-status').textContent = '✅ Estoque e custos atualizados! NF ' + _xmlCache.nNF + ' registrada.';
   document.getElementById('imp-xml-file').value = '';
   alert('✅ NF-e importada! Estoque e custos atualizados.');
 }
@@ -2455,7 +2482,7 @@ window.addEventListener('load', () => {
     
     // Manifest dinâmico com ícone correto
     const manifest = {
-      name: 'Fraldas — MS Farma',
+      name: 'MS Fraldas',
       short_name: 'Fraldas',
       description: 'Sistema de gestão de fraldas MS Farma',
       start_url: '/fraldas/',
@@ -2565,7 +2592,7 @@ function exportarBackup() {
   const a = document.createElement('a');
   const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g,'-');
   a.href = url;
-  a.download = 'backup-fraldas-' + hoje + '.json';
+  a.download = 'backup-msfraldas-' + hoje + '.json';
   a.click();
   URL.revokeObjectURL(url);
   document.getElementById('backup-status').textContent = '✅ Backup exportado! Salve no Google Drive.';
@@ -2574,7 +2601,8 @@ function exportarBackup() {
 function importarBackup(input) {
   const file = input.files[0];
   if (!file) return;
-  if (!confirm('⚠️ Isso vai substituir os dados atuais pelo backup. Tem certeza?')) return;
+  if (!confirm('⚠️ ATENÇÃO! Isso vai apagar todos os dados atuais e substituir pelo backup. Esta ação não pode ser desfeita. Tem certeza absoluta?')) return;
+  if (!confirm('⚠️ Segunda confirmação — todos os dados atuais serão perdidos. Continuar?')) return;
   const reader = new FileReader();
   reader.onload = function(e) {
     try {
