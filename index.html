@@ -296,6 +296,15 @@ window.showSync = function(msg, cor) {
   </div>
   <div class="filtro-bar" id="filtro-preco"></div>
   <div id="lista-precos"></div>
+  <div id="historico-precos-panel" style="display:none">
+    <div class="card" style="margin-top:12px">
+      <div class="flex-entre">
+        <div class="card-titulo">📈 Histórico de custos — <span id="hist-prod-nome"></span></div>
+        <button class="btn btn-ghost" style="font-size:.7rem" onclick="fecharHistorico()">✕ Fechar</button>
+      </div>
+      <div id="hist-lista"></div>
+    </div>
+  </div>
 </div>
 
 <div id="sec-vendas" class="sec">
@@ -397,6 +406,7 @@ window.showSync = function(msg, cor) {
   <div class="card"><div class="card-titulo">📦 Produtos que mais giraram</div><div id="rel-giro"></div></div>
   <div class="card"><div class="card-titulo">💤 Produtos sem venda no período</div><div id="rel-parado"></div></div>
   <div class="card"><div class="card-titulo">📅 Sazonalidade — Tendência por mês</div><div id="rel-sazonalidade"></div></div>
+  <div class="card"><div class="card-titulo">📊 Comparativo mês a mês</div><div id="rel-comparativo"></div></div>
 </div>
 
 <!-- ALERTAS PROMOÇÃO -->
@@ -514,7 +524,7 @@ window.showSync = function(msg, cor) {
   <div class="sec-sub" style="margin-bottom:14px">Selecione o XLS de "Vendas por Itens" gerado pelo Infarma</div>
 
   <div class="card">
-    <div class="card-titulo">📂 Selecionar arquivo XLS</div>
+    <div class="card-titulo">📂 Importar Vendas — XLS Infarma</div>
     <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
       No Infarma: Relatórios → Vendas por Itens → Exportar XLS
     </div>
@@ -523,6 +533,33 @@ window.showSync = function(msg, cor) {
       📂 Selecionar arquivo XLS
     </button>
     <div id="imp-status" style="margin-top:10px;font-size:.78rem;color:var(--muted)"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-titulo">🧾 Importar NF-e XML — Nota do Fornecedor</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+      Importa a nota fiscal XML do fornecedor — atualiza estoque e custo automaticamente
+    </div>
+    <input type="file" id="imp-xml-file" accept=".xml" style="display:none" onchange="lerArquivoXML(this)">
+    <button class="btn btn-primary" style="width:100%;justify-content:center;background:var(--roxo)" onclick="document.getElementById('imp-xml-file').click()">
+      🧾 Selecionar arquivo XML
+    </button>
+    <div id="imp-xml-status" style="margin-top:10px;font-size:.78rem;color:var(--muted)"></div>
+  </div>
+
+  <div id="imp-xml-preview" style="display:none">
+    <div class="card">
+      <div class="card-titulo">🧾 Fraldas encontradas na NF-e</div>
+      <div style="font-size:.72rem;color:var(--muted);margin-bottom:10px" id="imp-xml-info"></div>
+      <div id="imp-xml-lista"></div>
+    </div>
+    <div class="card">
+      <div class="card-titulo">⚠️ Não reconhecidos</div>
+      <div id="imp-xml-nao-rec" style="font-size:.78rem;color:var(--muted)"></div>
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center;margin-top:4px;background:var(--roxo)" onclick="confirmarImportacaoXML()">
+      ✅ Confirmar — atualizar estoque e custo
+    </button>
   </div>
 
   <div id="imp-preview" style="display:none">
@@ -582,6 +619,42 @@ window.showSync = function(msg, cor) {
   </div>
 </div>
 
+
+<!-- MODAL NOVO PRODUTO -->
+<div class="modal-bg" id="modal-novo-produto">
+  <div class="modal">
+    <div class="modal-titulo">➕ Novo Produto</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Seção</label>
+          <select id="np-secao">
+            <option value="infantil">👶 Infantil</option>
+            <option value="geriatrica">🧓 Geriátrica</option>
+          </select>
+        </div>
+        <div><label>Tipo</label>
+          <select id="np-tipo">
+            <option value="FITA">FITA</option>
+            <option value="SHORTINHO">SHORTINHO</option>
+          </select>
+        </div>
+      </div>
+      <div><label>Marca</label><input type="text" id="np-marca" placeholder="Ex: Hipopó"></div>
+      <div><label>Linha</label><input type="text" id="np-linha" placeholder="Ex: Shortinho Mega"></div>
+      <div><label>Tamanho</label><input type="text" id="np-tam" placeholder="Ex: M, G, XG, XXG"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div><label>Custo (R$)</label><input type="number" id="np-custo" placeholder="0,00" step="0.01"></div>
+        <div><label>Venda (R$)</label><input type="number" id="np-venda" placeholder="0,00" step="0.01"></div>
+      </div>
+      <div><label>Estoque inicial</label><input type="number" id="np-estoque" placeholder="0" min="0"></div>
+      <div><label>Mínimo</label><input type="number" id="np-minimo" placeholder="3" min="0"></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="fecharModal('modal-novo-produto')">Cancelar</button>
+      <button class="btn btn-primary" onclick="salvarNovoProduto()">Salvar</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL ESTOQUE -->
 <div class="modal-bg" id="modal-estoque">
@@ -1215,6 +1288,23 @@ function salvarPreco(){
     if(tam) data.produtos[idx].tam=tam;
     if(tipo) data.produtos[idx].tipo=tipo;
   }
+  // Salva histórico de custo se mudou
+  if (custo) {
+    const custoAnterior = (data.precos[pid]||{}).custo;
+    if (custoAnterior && custoAnterior !== custo) {
+      if (!data.historicoPrecos) data.historicoPrecos = {};
+      if (!data.historicoPrecos[pid]) data.historicoPrecos[pid] = [];
+      // Registra o custo anterior se ainda não estava no histórico
+      if (data.historicoPrecos[pid].length === 0) {
+        data.historicoPrecos[pid].push({custo: custoAnterior, data: new Date(Date.now()-86400000).toISOString()});
+      }
+      data.historicoPrecos[pid].push({custo, data: new Date().toISOString()});
+    } else if (!custoAnterior) {
+      if (!data.historicoPrecos) data.historicoPrecos = {};
+      if (!data.historicoPrecos[pid]) data.historicoPrecos[pid] = [];
+      data.historicoPrecos[pid].push({custo, data: new Date().toISOString()});
+    }
+  }
   if(custo||venda) data.precos[pid]={custo,venda};
   save(data);fecharModal('modal-preco');renderPrecos();
 }
@@ -1489,6 +1579,269 @@ function filtrarPorSecao(prods, secao) {
   return prods.filter(p=>(p.secao||'infantil')===secao);
 }
 
+// ── COMPARATIVO MÊS A MÊS ────────────────────────────────────────────────────
+function renderComparativo(data) {
+  const vendas = data.vendas||[];
+  if (vendas.length < 2) {
+    document.getElementById('rel-comparativo').innerHTML = '<div style="color:var(--muted);font-size:.8rem">Precisa de pelo menos 2 meses importados para comparar</div>';
+    return;
+  }
+
+  const MESES = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const porMes = {};
+
+  vendas.forEach(v => {
+    const d = new Date(v.data);
+    const key = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const label = MESES[d.getMonth()]+'/'+String(d.getFullYear()).slice(2);
+    if (!porMes[key]) porMes[key] = {label, qtd:0, faturamento:0, lucro:0, produtos:{}};
+    const p = data.produtos.find(x=>x.id===v.produtoId);
+    const pr = p ? data.precos[p.id]||{} : {};
+    const fat = pr.venda ? pr.venda * v.qtd : 0;
+    const luc = (pr.venda && pr.custo) ? (pr.venda - pr.custo) * v.qtd : 0;
+    porMes[key].qtd += v.qtd;
+    porMes[key].faturamento += fat;
+    porMes[key].lucro += luc;
+    porMes[key].produtos[v.produtoId] = (porMes[key].produtos[v.produtoId]||0) + v.qtd;
+  });
+
+  const meses = Object.entries(porMes).sort((a,b)=>a[0].localeCompare(b[0]));
+
+  let html2 = '';
+  for (let i = 1; i < meses.length; i++) {
+    const ant = meses[i-1][1];
+    const atu = meses[i][1];
+
+    const varQtd = ant.qtd > 0 ? ((atu.qtd - ant.qtd)/ant.qtd*100) : 0;
+    const varFat = ant.faturamento > 0 ? ((atu.faturamento - ant.faturamento)/ant.faturamento*100) : 0;
+    const varLuc = ant.lucro > 0 ? ((atu.lucro - ant.lucro)/ant.lucro*100) : 0;
+
+    const cor = (v) => v > 0 ? 'var(--verde)' : v < 0 ? 'var(--vermelho)' : 'var(--muted)';
+    const seta = (v) => v > 0 ? '📈' : v < 0 ? '📉' : '➡️';
+    const fmt2 = (v) => (v > 0 ? '+' : '') + v.toFixed(1) + '%';
+
+    html2 += `<div style="background:var(--card2);border-radius:10px;padding:12px;margin-bottom:10px">
+      <div style="font-size:.8rem;font-weight:700;margin-bottom:10px;color:var(--accent)">${ant.label} → ${atu.label}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">PACOTES</div>
+          <div style="font-size:.9rem;font-weight:800">${atu.qtd}</div>
+          <div style="font-size:.72rem;color:${cor(varQtd)};font-weight:700">${seta(varQtd)} ${fmt2(varQtd)}</div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">FATURAMENTO</div>
+          <div style="font-size:.9rem;font-weight:800">${fmt(atu.faturamento)||'—'}</div>
+          <div style="font-size:.72rem;color:${cor(varFat)};font-weight:700">${seta(varFat)} ${fmt2(varFat)}</div>
+        </div>
+        <div>
+          <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">LUCRO EST.</div>
+          <div style="font-size:.9rem;font-weight:800">${fmt(atu.lucro)||'—'}</div>
+          <div style="font-size:.72rem;color:${cor(varLuc)};font-weight:700">${seta(varLuc)} ${fmt2(varLuc)}</div>
+        </div>
+      </div>
+    </div>`;
+  }
+
+  document.getElementById('rel-comparativo').innerHTML = html2;
+}
+
+// ── HISTÓRICO DE PREÇOS ───────────────────────────────────────────────────────
+function verHistoricoPreco(pid) {
+  const data = load();
+  const p = data.produtos.find(x=>x.id===pid);
+  if (!p) return;
+
+  const hist = (data.historicoPrecos||{})[pid]||[];
+  const pr = data.precos[pid]||{};
+
+  document.getElementById('hist-prod-nome').textContent = p.marca+' '+p.linha+' '+p.tam;
+
+  if (hist.length === 0) {
+    document.getElementById('hist-lista').innerHTML = `
+      <div style="color:var(--muted);font-size:.8rem;padding:8px 0">
+        Nenhum histórico ainda. O histórico começa a ser registrado a partir de agora cada vez que você salvar um novo custo.
+      </div>
+      ${pr.custo ? `<div style="font-size:.8rem;padding:8px 0;border-top:1px solid var(--borda)">Custo atual: <strong>${fmt(pr.custo)}</strong></div>` : ''}
+    `;
+  } else {
+    const maxCusto = Math.max(...hist.map(h=>h.custo), pr.custo||0);
+    document.getElementById('hist-lista').innerHTML = 
+      [...hist].reverse().map((h,i) => {
+        const ant = hist[hist.length-2-i];
+        const var2 = ant ? ((h.custo-ant.custo)/ant.custo*100) : 0;
+        const cor = var2 > 0 ? 'var(--vermelho)' : var2 < 0 ? 'var(--verde)' : 'var(--muted)';
+        const w = Math.round((h.custo/maxCusto)*100);
+        return `<div style="padding:8px 0;border-bottom:1px solid var(--borda)">
+          <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:4px">
+            <span style="color:var(--muted)">${new Date(h.data).toLocaleDateString('pt-BR')}</span>
+            <span style="font-weight:700">${fmt(h.custo)}</span>
+            ${var2 !== 0 ? `<span style="color:${cor};font-size:.7rem">${var2>0?'+':''}${var2.toFixed(1)}%</span>` : ''}
+          </div>
+          <div style="height:5px;border-radius:3px;background:var(--borda)">
+            <div style="height:100%;border-radius:3px;width:${w}%;background:${var2>0?'var(--vermelho)':'var(--accent)'}"></div>
+          </div>
+        </div>`;
+      }).join('') +
+      `<div style="font-size:.68rem;color:var(--muted);margin-top:8px">${hist.length} registros · Desde ${new Date(hist[0].data).toLocaleDateString('pt-BR')}</div>`;
+  }
+
+  document.getElementById('historico-precos-panel').style.display = 'block';
+  document.getElementById('historico-precos-panel').scrollIntoView({behavior:'smooth'});
+}
+
+function fecharHistorico() {
+  document.getElementById('historico-precos-panel').style.display = 'none';
+}
+
+// ── NOVO PRODUTO ──────────────────────────────────────────────────────────────
+function abrirModalNovoProduto() {
+  document.getElementById('np-marca').value = '';
+  document.getElementById('np-linha').value = '';
+  document.getElementById('np-tam').value = '';
+  document.getElementById('np-custo').value = '';
+  document.getElementById('np-venda').value = '';
+  document.getElementById('np-estoque').value = '0';
+  document.getElementById('np-minimo').value = '3';
+  document.getElementById('modal-novo-produto').classList.add('aberto');
+}
+
+function salvarNovoProduto() {
+  const marca = document.getElementById('np-marca').value.trim();
+  const linha = document.getElementById('np-linha').value.trim();
+  const tam = document.getElementById('np-tam').value.trim();
+  const tipo = document.getElementById('np-tipo').value;
+  const secao = document.getElementById('np-secao').value;
+  const custo = parseFloat(document.getElementById('np-custo').value)||0;
+  const venda = parseFloat(document.getElementById('np-venda').value)||0;
+  const estoque = parseInt(document.getElementById('np-estoque').value)||0;
+  const minimo = parseInt(document.getElementById('np-minimo').value)||3;
+
+  if (!marca || !linha || !tam) { alert('Preencha Marca, Linha e Tamanho!'); return; }
+
+  const data = load();
+  // Gera ID único
+  const prefix = marca.toLowerCase().replace(/[^a-z]/g,'').slice(0,2);
+  const ids = data.produtos.filter(p=>p.id.startsWith(prefix)).map(p=>parseInt(p.id.replace(prefix,''))||0);
+  const nextNum = ids.length > 0 ? Math.max(...ids) + 1 : 1;
+  const id = prefix + String(nextNum).padStart(2,'0');
+
+  data.produtos.push({id, marca, linha, tipo, tam, minimo, obs:'', secao});
+  data.estoques[id] = estoque;
+  if (custo || venda) data.precos[id] = {custo, venda};
+
+  save(data);
+  fecharModal('modal-novo-produto');
+  renderEstoque();
+  alert('✅ Produto ' + marca + ' ' + linha + ' ' + tam + ' adicionado!');
+}
+
+// ── IMPORTAR NF-e XML ─────────────────────────────────────────────────────────
+let _xmlCache = [];
+
+const PALAVRAS_FRALDA = ['FRALDA','HIPOPO','BABYSEC','MILI','PAMPERS','MAMYPOKO','LOOPING','CONFORTBABY','PLENTY CARE','LIFREE','CONFORT MAST'];
+
+function lerArquivoXML(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('imp-xml-status').textContent = '⏳ Lendo NF-e...';
+  document.getElementById('imp-xml-preview').style.display = 'none';
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(e.target.result, 'text/xml');
+      const ns = 'http://www.portalfiscal.inf.br/nfe';
+
+      // Info da nota
+      const nNF = xmlDoc.getElementsByTagNameNS(ns,'nNF')[0]?.textContent || '';
+      const dhEmi = xmlDoc.getElementsByTagNameNS(ns,'dhEmi')[0]?.textContent || xmlDoc.getElementsByTagNameNS(ns,'dEmi')[0]?.textContent || '';
+      const fornecedor = xmlDoc.getElementsByTagNameNS(ns,'xNome')[0]?.textContent || '';
+      const dataEmissao = dhEmi ? new Date(dhEmi).toLocaleDateString('pt-BR') : '';
+
+      // Itens da nota
+      const itens = xmlDoc.getElementsByTagNameNS(ns,'det');
+      const data = load();
+      const fraldas = [];
+      const naoRec = [];
+
+      for (let i = 0; i < itens.length; i++) {
+        const prod = itens[i].getElementsByTagNameNS(ns,'prod')[0];
+        if (!prod) continue;
+        const desc = prod.getElementsByTagNameNS(ns,'xProd')[0]?.textContent || '';
+        const qtd = parseFloat(prod.getElementsByTagNameNS(ns,'qCom')[0]?.textContent)||0;
+        const vUnit = parseFloat(prod.getElementsByTagNameNS(ns,'vUnCom')[0]?.textContent)||0;
+        const cod = prod.getElementsByTagNameNS(ns,'cProd')[0]?.textContent || '';
+
+        // Verifica se é fralda
+        const dUp = desc.toUpperCase();
+        const eFralda = PALAVRAS_FRALDA.some(p => dUp.includes(p));
+        if (!eFralda) continue;
+
+        // Tenta reconhecer produto cadastrado
+        const p = identificarProduto(desc, data.produtos);
+        if (p) {
+          fraldas.push({p, desc, qtd, custo: vUnit, cod});
+        } else {
+          naoRec.push({desc, qtd, custo: vUnit, cod});
+        }
+      }
+
+      _xmlCache = {fraldas, naoRec, fornecedor, dataEmissao, nNF};
+
+      document.getElementById('imp-xml-status').textContent = `✅ ${fraldas.length} fraldas encontradas na NF-e!`;
+      document.getElementById('imp-xml-info').textContent = `Fornecedor: ${fornecedor} · NF ${nNF} · ${dataEmissao}`;
+
+      document.getElementById('imp-xml-lista').innerHTML = fraldas.length === 0
+        ? '<div style="color:var(--muted);font-size:.8rem">Nenhuma fralda reconhecida</div>'
+        : fraldas.map(v => {
+            const pr = data.precos[v.p.id]||{};
+            const m = pr.venda ? margem(v.custo, pr.venda) : null;
+            const catKey = getCategoria(v.p);
+            const st = statusMargem(m, catKey);
+            return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--borda)">
+              <div style="flex:1">
+                <div style="font-size:.8rem;font-weight:700"><span class="marca-badge ${marcaClass(v.p.marca)}">${v.p.marca}</span> ${v.p.linha} ${v.p.tam}</div>
+                <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${v.qtd} pct · Custo: <strong>${fmt(v.custo)}</strong>${m !== null ? ' · Margem: <strong class="'+st.cls+'">'+pct(m)+'</strong>' : ''}</div>
+              </div>
+              <div style="font-size:1rem;font-weight:800;color:var(--accent)">${v.qtd}</div>
+            </div>`;
+          }).join('');
+
+      document.getElementById('imp-xml-nao-rec').innerHTML = naoRec.length === 0
+        ? '<span style="color:var(--verde)">✅ Todos reconhecidos!</span>'
+        : naoRec.map(n => `<div style="padding:4px 0;border-bottom:1px solid var(--borda)">${n.desc} — <strong>${n.qtd} pct · ${fmt(n.custo)}</strong></div>`).join('');
+
+      document.getElementById('imp-xml-preview').style.display = 'block';
+
+    } catch(err) {
+      document.getElementById('imp-xml-status').textContent = '❌ Erro ao ler XML: ' + err.message;
+      console.error(err);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function confirmarImportacaoXML() {
+  if (!_xmlCache || !_xmlCache.fraldas) return;
+  const data = load();
+
+  _xmlCache.fraldas.forEach(v => {
+    // Atualiza estoque (soma)
+    data.estoques[v.p.id] = (data.estoques[v.p.id]||0) + v.qtd;
+    // Atualiza custo
+    if (!data.precos[v.p.id]) data.precos[v.p.id] = {};
+    data.precos[v.p.id].custo = v.custo;
+  });
+
+  save(data);
+  _xmlCache = [];
+  document.getElementById('imp-xml-preview').style.display = 'none';
+  document.getElementById('imp-xml-status').textContent = '✅ Estoque e custos atualizados!';
+  document.getElementById('imp-xml-file').value = '';
+  alert('✅ NF-e importada! Estoque e custos atualizados.');
+}
+
 // ── IMPORTAR VENDAS INFARMA ───────────────────────────────────────────────────
 let _importCache = [];
 
@@ -1690,6 +2043,103 @@ function confirmarImportacao() {
   document.getElementById('imp-status').textContent = '✅ Vendas importadas com sucesso!';
   document.getElementById('imp-file').value = '';
   alert('✅ Vendas importadas! Veja o histórico na aba Vendas.');
+}
+
+// ── WHATSAPP REPOSIÇÃO ────────────────────────────────────────────────────────
+function enviarWhatsApp() {
+  const data = load();
+  const precisam = data.produtos.filter(p => {
+    const min = minimoInteligente(data, p);
+    return (data.estoques[p.id]||0) < min;
+  }).sort((a,b) => (data.estoques[a.id]||0) - (data.estoques[b.id]||0));
+
+  if (precisam.length === 0) {
+    alert('✅ Nenhum produto precisa de reposição agora!');
+    return;
+  }
+
+  const hoje = new Date().toLocaleDateString('pt-BR');
+  let msg = `🍼 *PEDIDO DE FRALDAS — MS Farma*
+📅 ${hoje}
+
+`;
+
+  // Agrupa por marca
+  const porMarca = {};
+  precisam.forEach(p => {
+    if (!porMarca[p.marca]) porMarca[p.marca] = [];
+    const q = data.estoques[p.id]||0;
+    const min = minimoInteligente(data, p);
+    const repor = Math.max(min * 2 - q, 1);
+    porMarca[p.marca].push({p, q, repor});
+  });
+
+  Object.entries(porMarca).forEach(([marca, itens]) => {
+    msg += `*${marca}*
+`;
+    itens.forEach(({p, q, repor}) => {
+      const zerado = q === 0 ? '🔴' : '🟡';
+      msg += `${zerado} ${p.linha} ${p.tam} — pedir ${repor} pct (estoque: ${q})
+`;
+    });
+    msg += '
+';
+  });
+
+  msg += `_Total: ${precisam.length} produtos_
+_Enviado pelo sistema MS Farma_`;
+
+  const encoded = encodeURIComponent(msg);
+  window.open('https://wa.me/?text=' + encoded, '_blank');
+}
+
+// ── MARGEM POR MARCA ──────────────────────────────────────────────────────────
+function renderMargemMarca(data) {
+  const marcas = [...new Set(data.produtos.map(p => p.marca))];
+
+  const stats = marcas.map(marca => {
+    const prods = data.produtos.filter(p => p.marca === marca);
+    const comPreco = prods.filter(p => data.precos[p.id]?.custo && data.precos[p.id]?.venda);
+    if (comPreco.length === 0) return {marca, margemMedia: null, qtdProds: prods.length, qtdComPreco: 0, lucroEstimado: 0};
+
+    const margens = comPreco.map(p => {
+      const pr = data.precos[p.id];
+      const m = margem(pr.custo, pr.venda);
+      const giro = calcularGiro(data, p.id);
+      const lucroMensal = giro ? (pr.venda - pr.custo) * giro.mediasMensal : 0;
+      return {m, lucroMensal};
+    });
+
+    const margemMedia = margens.reduce((s,x)=>s+x.m,0) / margens.length;
+    const lucroEstimado = margens.reduce((s,x)=>s+x.lucroMensal,0);
+
+    return {marca, margemMedia, qtdProds: prods.length, qtdComPreco: comPreco.length, lucroEstimado};
+  }).filter(x => x.margemMedia !== null)
+    .sort((a,b) => b.lucroEstimado - a.lucroEstimado);
+
+  const maxLucro = Math.max(...stats.map(s=>s.lucroEstimado), 1);
+
+  document.getElementById('rel-margem-marca').innerHTML = stats.length === 0
+    ? '<div style="color:var(--muted);font-size:.8rem">Preencha os preços para ver a lucratividade por marca</div>'
+    : stats.map((s, i) => {
+        const w = Math.round((s.lucroEstimado / maxLucro) * 100);
+        const corMargem = s.margemMedia >= 25 ? 'var(--verde)' : s.margemMedia >= 15 ? 'var(--amarelo)' : 'var(--vermelho)';
+        return `<div style="margin-bottom:14px">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <div style="font-weight:800;color:var(--muted);width:18px">${i+1}</div>
+            <span class="marca-badge ${marcaClass(s.marca)}">${s.marca}</span>
+            <span style="font-size:.75rem;flex:1;color:var(--muted)">${s.qtdComPreco}/${s.qtdProds} produtos com preço</span>
+            <span style="font-size:.75rem;font-weight:700;color:${corMargem}">margem ${pct(s.margemMedia)}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <div style="flex:1;height:8px;border-radius:4px;background:var(--borda)">
+              <div style="height:100%;border-radius:4px;width:${w}%;background:linear-gradient(90deg,var(--verde),var(--accent))"></div>
+            </div>
+            <span style="font-size:.78rem;font-weight:700;color:var(--verde);min-width:70px;text-align:right">${fmt(s.lucroEstimado)}/mês</span>
+          </div>
+        </div>`;
+      }).join('') +
+      '<div style="font-size:.68rem;color:var(--muted);margin-top:6px">* Lucro estimado baseado no giro real × margem</div>';
 }
 
 // ── SIMULADOR AUMENTO CUSTO ───────────────────────────────────────────────────
@@ -2190,6 +2640,8 @@ function renderRelatorio() {
 
   // Sazonalidade
   renderSazonalidade(data);
+  renderComparativo(data);
+  renderMargemMarca(data);
 }
 
 function renderSazonalidade(data) {
