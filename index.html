@@ -877,6 +877,9 @@ const PRODUTOS_INICIAIS = [
   {id:'cb02',marca:'ConfortBaby',linha:'Básica',tipo:'FITA',tam:'EG',minimo:3,obs:'',secao:'infantil'},
   // GERIÁTRICA
   {id:'g01',marca:'Confort',linha:'Mast',tipo:'FITA',tam:'Único',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g12',marca:'Confort',linha:'Mast Econ',tipo:'FITA',tam:'G',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g13',marca:'Confort',linha:'Mast Econ',tipo:'FITA',tam:'M',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g14',marca:'Confort',linha:'Mast Econ',tipo:'FITA',tam:'EG',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g02',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g03',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g04',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
@@ -924,7 +927,7 @@ const ESTOQUE_INICIAL = {
   // Looping
   lo01:4,lo02:3,lo03:4,lo04:4,
   lo05:0,lo06:0,lo07:0,lo08:0,
-  g10:0,g11:0,
+  g10:0,g11:0,g12:0,g13:0,g14:0,
 
   // ConfortBaby
   cb01:0,cb02:0,
@@ -2040,97 +2043,269 @@ let _importCache = [];
 // Palavras-chave para identificar fraldas por marca/linha
 function identificarProduto(descricao, produtos) {
   const d = descricao.toUpperCase();
-  
-  // Match especial para produtos geriátricos pelo nome da linha
+
+  // ── GERIÁTRICA ───────────────────────────────────────────────────────────────
   for (const p of produtos) {
     if ((p.secao||'infantil') !== 'geriatrica') continue;
-    const tam = p.tam.toUpperCase();
-    
-    // Confort Mast / CONF MASTER
-    if (p.id === 'g01' && (d.includes('CONF MASTER') || d.includes('CONFORT MAST')) && d.includes('REG')) return p;
-    
+
+    // Confort Mast REG (g01) - CONF MASTER REG
+    if (p.id === 'g01' && (d.includes('CONF MASTER REG') || d.includes('CONFORT MAST REG'))) return p;
+
+    // Confort Mast Econ G/M/EG
+    if (p.marca === 'Confort' && p.linha === 'Mast Econ') {
+      if (!d.includes('CONF MASTER ECON') && !d.includes('CONFORT MAST ECON')) continue;
+      if (p.tam === 'G' && d.includes(' G ')) return p;
+      if (p.tam === 'M' && d.includes(' M ')) return p;
+      if (p.tam === 'EG' && d.includes('EG')) return p;
+    }
+
     // Plenty Care Roupa Íntima
     if (p.marca === 'Plenty Care' && p.linha.includes('Roupa')) {
-      if (!d.includes('ROUPA') && !d.includes('INT PLENTY')) continue;
-      const temPM = d.includes('P/M') || (d.includes('P') && d.includes('M') && !d.includes('G/XG'));
-      const temGXG = d.includes('G/XG') || d.includes('GXG');
+      if (!d.includes('ROUPA') && !d.includes('ROUPA INT')) continue;
       const tem32 = d.includes('32');
-      if (p.tam === 'P/M 16und' && temPM && !tem32) return p;
-      if (p.tam === 'P/M 32und' && temPM && tem32) return p;
-      if (p.tam === 'G/XG 16und' && temGXG && !tem32) return p;
-    }
-    
-    // Plenty Care Pants Premium
-    if (p.marca === 'Plenty Care' && p.linha.includes('Pants')) {
-      if (!d.includes('PANTS') && !d.includes('PREMIUM')) continue;
-      const temPM = d.includes('P/M') || d.includes('PM');
-      const temGXG = d.includes('G/XG') || d.includes('GXG');
-      const tem32 = d.includes('32');
+      const temPM = d.includes('P/M') || d.includes('P M');
+      const temGXG = d.includes('G/XG') || d.includes('G XG');
       if (p.tam === 'P/M 16und' && temPM && !tem32) return p;
       if (p.tam === 'P/M 32und' && temPM && tem32) return p;
       if (p.tam === 'G/XG 16und' && temGXG && !tem32) return p;
       if (p.tam === 'G/XG 32und' && temGXG && tem32) return p;
     }
-    
-    // Lifree Super Conforto Jumbo
+
+    // Plenty Care Pants Premium
+    if (p.marca === 'Plenty Care' && p.linha.includes('Pants')) {
+      if (!d.includes('PANTS') || !d.includes('PREMIUM')) continue;
+      const tem32 = d.includes('32') || d.includes('P/M32') || d.includes('G/XG32');
+      const temPM = d.includes('P/M');
+      const temGXG = d.includes('G/XG');
+      if (p.tam === 'P/M 16und' && temPM && !tem32) return p;
+      if (p.tam === 'P/M 32und' && temPM && tem32) return p;
+      if (p.tam === 'G/XG 16und' && temGXG && !tem32) return p;
+      if (p.tam === 'G/XG 32und' && temGXG && tem32) return p;
+    }
+
+    // Lifree Calça Extra Mega (g05) - LIFREE EXTRA MEGA P/M
+    if (p.id === 'g05' && d.includes('LIFREE') && d.includes('EXTRA') && d.includes('MEGA') && d.includes('P/M')) return p;
+
+    // Lifree Super Conforto Jumbo / S CONF MEGA (g10, g11)
     if (p.marca === 'Lifree' && p.linha.includes('Super Conforto')) {
       if (!d.includes('LIFREE')) continue;
-      const temPM = d.includes('P/M') || d.includes('PM');
-      const temGXG = d.includes('G/XG') || d.includes('GXG');
+      const temSuperConf = d.includes('SUPER CONFORTO') || d.includes('S CONF') || d.includes('GERIATRICA');
+      if (!temSuperConf) continue;
+      const temPM = d.includes('P/M');
+      const temGXG = d.includes('G/XG');
       if (p.tam === 'P/M 16und' && temPM) return p;
       if (p.tam === 'G/XG 16und' && temGXG) return p;
     }
+  }
 
-    // Confort Mast Econ
-    if (p.marca === 'Confort' && d.includes('CONF MASTER') && d.includes('ECON')) {
-      const temM = d.includes(' M ') || d.includes('M30');
-      const temG = d.includes(' G ') || d.includes('G30');
-      const temEG = d.includes('EG') || d.includes('26');
-      if (p.tam === 'M' && temM) return p;
-      if (p.tam === 'G' && temG) return p;
-      if (p.tam === 'EG' && temEG) return p;
+  // ── INFANTIL ─────────────────────────────────────────────────────────────────
+  for (const p of produtos) {
+    if ((p.secao||'infantil') === 'geriatrica') continue;
+    const marca = p.marca.toUpperCase();
+    const tam = p.tam.toUpperCase();
+
+    // ── HIPOPÓ ───────────────────────────────────────────────────────────────
+    if (marca === 'HIPOPÓ') {
+      if (!d.includes('HIPOPO')) continue;
+
+      // Econômica Fita - ECON PACOT/PACOTE
+      if (p.linha === 'Econômica') {
+        if (!d.includes('ECON')) continue;
+        if (p.tam === 'P' && (d.includes(' P ') || d.includes('P 56') || d.includes('P56'))) return p;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 50') || d.includes('M50'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 46') || d.includes('G46')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') && !d.includes('XXG'))) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+
+      // Hiper Fita - BABY HIPER
+      if (p.linha === 'Hiper') {
+        if (!d.includes('BABY HIPER') && !d.includes('HIPOPO BABY')) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+
+      // Shortinho Mega - MEGA (sem CALCA/CONFORT)
+      if (p.linha === 'Shortinho Mega') {
+        if (d.includes('CALCA') || d.includes('CONFORT') || d.includes('BABY') || d.includes('ECON') || d.includes('JUMB')) continue;
+        if (!d.includes('MEGA')) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+
+      // Premium Jumbinho - SHORT JUMBINHO
+      if (p.linha === 'Premium Jumbinho') {
+        if (!d.includes('JUMBINHO') && !d.includes('SHORT JUMB')) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+
+      // Shortinho Jumbo - CONFORT JUMBO / CONFORT BAG / CONFORT JUMB
+      if (p.linha === 'Shortinho Jumbo') {
+        if (!d.includes('CONFORT') && !d.includes('CALCA HIPOPO')) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 34') || d.includes('M34') || d.includes('M 72') || d.includes('BAG M'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 30') || d.includes('G 60') || d.includes('BAG G')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('BAG XG')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('BAG XXG'))) return p;
+      }
+    }
+
+    // ── BABYSEC ───────────────────────────────────────────────────────────────
+    if (marca === 'BABYSEC') {
+      if (!d.includes('BABYSEC')) continue;
+
+      // Premium Shortinho Mega - SHORT PREM MEGA / SHORTINHO MEGA / ULTRASEC SHORTINHO MEGA
+      if (p.linha === 'Premium Shortinho Mega') {
+        if (!((d.includes('SHORT') || d.includes('SHORTINHO')) && d.includes('MEGA'))) continue;
+        if (d.includes('ULTRA') || d.includes('ULTRASEC') || d.includes('HIPER') || d.includes('HIPER')) continue;
+        if (d.includes('PREM') || d.includes('PREMIUM') || (!d.includes('ULTRA') && !d.includes('INF'))) {
+          if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 30') || d.includes('1X30') || d.includes('M30'))) return p;
+          if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 24') || d.includes('1X24') || d.includes('G24')) && !d.includes('XG')) return p;
+          if (p.tam === 'XG' && (d.includes('XG') || d.includes('1X22')) && !d.includes('XXG')) return p;
+          if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('1X20'))) return p;
+          if (p.tam === 'XXXG' && (d.includes('XXXG') || d.includes('1X16') || d.includes('16IM'))) return p;
+        }
+      }
+
+      // Premium Shortinho Hiper - SHORT PREM HIPER / SHORTINHO HIPER
+      if (p.linha === 'Premium Shortinho Hiper') {
+        if (!d.includes('HIPER')) continue;
+        if (!d.includes('SHORT') && !d.includes('SHORTINHO')) continue;
+        if (d.includes('ULTRA') || d.includes('ULTRASEC') || d.includes('INF ULTRA')) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 60') || d.includes('M60'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 48') || d.includes('G48')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG 42') || d.includes('42 IM')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG 42') || d.includes('42IMP'))) return p;
+        if (p.tam === 'XXXG' && (d.includes('XXXG') || d.includes('XXXG32'))) return p;
+      }
+
+      // Ultrasec Shortinho Mega - ULTRASEC SHORTINHO MEGA
+      if (p.linha === 'Ultrasec Shortinho Mega') {
+        if (!d.includes('ULTRA') && !d.includes('ULTRASEC')) continue;
+        if (!d.includes('SHORT') && !d.includes('SHORTINHO')) continue;
+        if (!d.includes('MEGA')) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('1X26') || d.includes('M26'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('1X22') || d.includes('G22')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('1X20')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('1X20'))) return p;
+        if (p.tam === 'XXXG' && (d.includes('XXXG') || d.includes('1X16'))) return p;
+      }
+
+      // Ultrasec Mega Fita - INF ULTRA MEGA / ULTRA MEGA
+      if (p.linha === 'Ultrasec Mega') {
+        if (!d.includes('MEGA')) continue;
+        if (!d.includes('ULTRA')) continue;
+        if (d.includes('SHORT') || d.includes('SHORTINHO') || d.includes('HIPER')) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 38') || d.includes('1X38') || d.includes('M38'))) return p;
+        if (p.tam === 'P' && (d.includes(' P ') || d.includes('P 42') || d.includes('1X42') || d.includes('P42'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 32') || d.includes('1X32') || d.includes('G32')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG/30') || d.includes('1X30')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('1X28') || d.includes('XXG 28'))) return p;
+      }
+
+      // Ultrasec Hiper Fita - ULTRA HIPER / INF ULTRA HIPER
+      if (p.linha === 'Ultrasec Hiper') {
+        if (!d.includes('HIPER') || !d.includes('ULTRA')) continue;
+        if (d.includes('SHORT') || d.includes('SHORTINHO')) continue;
+        if (p.tam === 'P' && (d.includes(' P ') || d.includes('P 72') || d.includes('P72'))) return p;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 68') || d.includes('M68'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 60') || d.includes('G60') || d.includes('G 64') || d.includes('G64')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG 56') || d.includes('XG 60')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG 48') || d.includes('XXG 52'))) return p;
+      }
+    }
+
+    // ── MILI ─────────────────────────────────────────────────────────────────
+    if (marca === 'MILI') {
+      if (!d.includes('MILI')) continue;
+
+      // Pants Love & Care Jumbo - PANTS JUMBO / LOVECARE PANTS
+      if (p.linha === 'Pants Love & Care Jumbo') {
+        if (!d.includes('PANTS')) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+
+      // Jumbo Fita - LOVE CARE JUMBO (sem PANTS, sem MEGA)
+      if (p.linha === 'Jumbo') {
+        if (!d.includes('JUMBO') || d.includes('PANTS') || d.includes('MEGA')) continue;
+        if (p.tam === 'RN' && (d.includes('RN') || d.includes(' RN'))) return p;
+        if (p.tam === 'P' && (d.includes(' P ') || d.includes('P 28') || d.includes('P28'))) return p;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 26') || d.includes('M26'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 24') || d.includes('G24')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG 22')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG 20'))) return p;
+      }
+
+      // Mega Fita - LOVE CARE MEGA
+      if (p.linha === 'Mega') {
+        if (!d.includes('MEGA') || d.includes('MAMYPOKO')) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+    }
+
+    // ── MAMYPOKO ─────────────────────────────────────────────────────────────
+    if (marca === 'MAMYPOKO') {
+      if (!d.includes('MAMYPOKO')) continue;
+      // Pacotão - D&N GIGA ou sem JB
+      if (p.linha === 'Pacotão') {
+        if (!d.includes('GIGA') && !d.includes('D&N') && !d.includes('JB MAMYPOKO')) continue;
+        if (d.includes('SP JB') || (d.includes('JB') && !d.includes('GIGA'))) continue;
+        if (p.tam === 'M' && d.includes(' M ')) return p;
+        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+      }
+      // Mega - SP JB / JB / CALCA JB
+      if (p.linha === 'Mega') {
+        if (!d.includes('JB') && !d.includes('SP JB') && !d.includes('CALCA JB')) continue;
+        if (d.includes('GIGA') || d.includes('D&N')) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M34') || d.includes('M 34'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G28') || d.includes('G 28')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG24') || d.includes('XG 24') || d.includes('XG26') || d.includes('XG 26')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG22') || d.includes('XXG 22') || d.includes('XXG24'))) return p;
+      }
+    }
+
+    // ── PAMPERS ───────────────────────────────────────────────────────────────
+    if (marca === 'PAMPERS') {
+      if (!d.includes('PAMPERS')) continue;
+      if (p.tam === 'RN 4kg' && (d.includes('RN') && d.includes('4'))) return p;
+      if (p.tam === 'RN 6kg' && (d.includes('RN') && d.includes('6'))) return p;
+    }
+
+    // ── LOOPING ───────────────────────────────────────────────────────────────
+    if (marca === 'LOOPING') {
+      if (!d.includes('LOOPING') && !d.includes('LOONEY')) continue;
+      const eHiper = d.includes('HIPER');
+      const eLeve = d.includes('LEVE') || d.includes('PAGUE');
+      if (p.linha.includes('Hiper') && !eHiper) continue;
+      if (p.linha.includes('Leve') && !eLeve) continue;
+      if (p.tam === 'M' && (d.includes(' M ') || d.includes('M L') || d.includes('M54') || d.includes('M 54'))) return p;
+      if (p.tam === 'G' && (d.includes(' G ') || d.includes('G L') || d.includes('G46') || d.includes('G 46')) && !d.includes('XG')) return p;
+      if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG L') || d.includes('XG42')) && !d.includes('XXG')) return p;
+      if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG L') || d.includes('XXG38'))) return p;
+    }
+
+    // ── CONFORTBABY ───────────────────────────────────────────────────────────
+    if (marca === 'CONFORTBABY') {
+      if (!d.includes('CONFORTBABY') && !d.includes('CONFORT BABY')) continue;
+      if (p.tam === 'M' && d.includes(' M ')) return p;
+      if (p.tam === 'EG' && d.includes('EG')) return p;
     }
   }
 
-  // Tenta match direto por palavras-chave
-  for (const p of produtos) {
-    if ((p.secao||'infantil') === 'geriatrica') continue; // já tratados acima
-    const marca = p.marca.toUpperCase();
-    const linha = p.linha.toUpperCase();
-    const tam = p.tam.toUpperCase();
-    
-    // Verifica marca
-    const temMarca = 
-      (marca === 'HIPOPÓ' && (d.includes('HIPOPO') || d.includes('HIPO PO'))) ||
-      (marca === 'BABYSEC' && d.includes('BABYSEC')) ||
-      (marca === 'MILI' && (d.includes('MILI') || d.includes('LOVECARE') || d.includes('LOVE CARE'))) ||
-      (marca === 'PAMPERS' && d.includes('PAMPERS'));
-    
-    if (!temMarca) continue;
-    
-    // Verifica tamanho
-    const temTam = 
-      (tam === 'M' && (d.includes(' M ') || d.includes(' M/') || d.endsWith(' M') || d.includes('C/M ') || d.includes('30UND') || d.includes('50UND') || d.includes('72UND') || d.includes('70UND'))) ||
-      (tam === 'G' && (d.includes(' G ') || d.includes(' G/') || d.endsWith(' G') || d.includes('24UND') || d.includes('48UND') || d.includes('60UND'))) ||
-      (tam === 'XG' && (d.includes('XG') || d.includes('22UND') || d.includes('44UND') || d.includes('50UND') || d.includes('26UND'))) ||
-      (tam === 'XXG' && (d.includes('XXG') || d.includes('20UND') || d.includes('38UND') || d.includes('40UND') || d.includes('42UND'))) ||
-      (tam === 'XXXG' && (d.includes('XXXG') || d.includes('16UND') || d.includes('18UND'))) ||
-      (tam === 'P' && (d.includes(' P ') || d.includes(' P/') || d.endsWith(' P') || d.includes('56UND') || d.includes('28UND') || d.includes('72UN'))) ||
-      (tam === 'RN' && d.includes('RN')) ||
-      (tam === 'RN 4kg' && d.includes('RN') && d.includes('4')) ||
-      (tam === 'RN 6kg' && d.includes('RN') && d.includes('6'));
-    
-    if (!temTam) continue;
-    
-    // Verifica tipo (FITA vs SHORTINHO)
-    const eFita = d.includes('FITA') || d.includes('PAC') || d.includes('ECON') || d.includes('HIPER') || d.includes('MEGA') && !d.includes('SHORT') && !d.includes('CALCA') && !d.includes('ROUPA') && !d.includes('PANTS');
-    const eShort = d.includes('SHORT') || d.includes('CALCA') || d.includes('ROUPA') || d.includes('PANTS') || d.includes('JUMB');
-    
-    if (p.tipo === 'FITA' && eShort && !eFita) continue;
-    if (p.tipo === 'SHORTINHO' && eFita && !eShort) continue;
-    
-    return p;
-  }
   return null;
 }
 
