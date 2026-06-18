@@ -2293,7 +2293,9 @@ function identificarProduto(descricao, produtos) {
 
       // Jumbo Fita - LOVE CARE JUMBO (sem PANTS, sem MEGA)
       if (p.linha === 'Jumbo') {
-        if (!d.includes('JUMBO') || d.includes('PANTS') || d.includes('MEGA')) continue;
+        if (d.includes('PANTS') || d.includes('MEGA')) continue;
+        // Aceita com ou sem a palavra JUMBO (ex: MILI LOVE CARE RN 18UND)
+        if (!d.includes('JUMBO') && !d.includes('RN') && !d.includes('18UND')) continue;
         if (p.tam === 'RN' && (d.includes('RN') || d.includes(' RN') || d.includes('RN 18') || d.includes('18UND'))) return p;
         if (p.tam === 'P' && (d.includes(' P ') || d.includes('P 28') || d.includes('P28'))) return p;
         if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 26') || d.includes('M26'))) return p;
