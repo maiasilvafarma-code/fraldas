@@ -945,6 +945,7 @@ const PRODUTOS_INICIAIS = [
   {id:'g02',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g03',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'P/M 32und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g04',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
+  {id:'g15',marca:'Plenty Care',linha:'Roupa Íntima',tipo:'FITA',tam:'G/XG 32und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g05',marca:'Lifree',linha:'Calça Extra Mega',tipo:'FITA',tam:'P/M',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g10',marca:'Lifree',linha:'Geriátrica Super Conforto Jumbo',tipo:'FITA',tam:'G/XG 16und',minimo:3,obs:'',secao:'geriatrica'},
   {id:'g11',marca:'Lifree',linha:'Geriátrica Super Conforto Jumbo',tipo:'FITA',tam:'P/M 16und',minimo:3,obs:'',secao:'geriatrica'},
@@ -989,7 +990,7 @@ const ESTOQUE_INICIAL = {
   // Looping
   lo01:4,lo02:3,lo03:4,lo04:4,
   lo05:0,lo06:0,lo07:0,lo08:0,
-  g10:0,g11:0,g12:0,g13:0,g14:0,
+  g10:0,g11:0,g12:0,g13:0,g14:0,g15:0,
 
   // ConfortBaby
   cb01:0,cb02:0,
@@ -2865,6 +2866,22 @@ window.addEventListener('appinstalled', ()=>{
   if(b) b.remove();
   showSync && showSync('✅ App instalado com sucesso!','ok');
 });
+
+// ── EXCLUIR PRODUTO ──────────────────────────────────────────────────────────
+function excluirProduto(pid, nome) {
+  if (!confirm('⚠️ Excluir ' + nome + '? Esta ação não pode ser desfeita.')) return;
+  const data = load();
+  // Remove do array de produtos
+  data.produtos = data.produtos.filter(p => p.id !== pid);
+  // Remove estoque e preços
+  delete data.estoques[pid];
+  delete data.precos[pid];
+  // Remove vendas do produto
+  data.vendas = (data.vendas||[]).filter(v => v.produtoId !== pid);
+  save(data);
+  renderPrecos();
+  alert('✅ Produto ' + nome + ' removido!');
+}
 
 // ── ZERAR ESTOQUE ────────────────────────────────────────────────────────────
 function zerarEstoque() {
