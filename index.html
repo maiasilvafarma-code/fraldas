@@ -2317,27 +2317,28 @@ function identificarProduto(descricao, produtos) {
     // ── MAMYPOKO ─────────────────────────────────────────────────────────────
     if (marca === 'MAMYPOKO') {
       if (!d.includes('MAMYPOKO')) continue;
-      // Pacotão - D&N GIGA ou sem JB
+      const temGiga = d.includes('GIGA') || d.includes('D&N');
+      const temJB = d.includes('JB');
+
+      // Pacotão - D&N GIGA
       if (p.linha === 'Pacotão') {
-        if (!d.includes('GIGA') && !d.includes('D&N') && !d.includes('JB MAMYPOKO')) continue;
-        if (d.includes('SP JB') || (d.includes('JB') && !d.includes('GIGA'))) continue;
-        if (p.tam === 'M' && d.includes(' M ')) return p;
-        if (p.tam === 'G' && d.includes(' G ') && !d.includes('XG')) return p;
-        if (p.tam === 'XG' && d.includes('XG') && !d.includes('XXG')) return p;
-        if (p.tam === 'XXG' && d.includes('XXG')) return p;
+        if (!temGiga) continue;
+        if (p.tam === 'M' && (d.includes(' M ') || d.includes('M 70'))) return p;
+        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G 60') || d.includes('60UND')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('50UND')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('44UND'))) return p;
       }
-      // Mega - SP JB / JB / CALCA JB
+      // Mega - JB ou SP JB (sem GIGA/D&N)
       if (p.linha === 'Mega') {
-        if (!d.includes('JB') && !d.includes('SP JB') && !d.includes('CALCA JB')) continue;
-        if (d.includes('GIGA') || d.includes('D&N')) continue;
+        if (!temJB || temGiga) continue;
         if (p.tam === 'M' && (d.includes(' M ') || d.includes('M34') || d.includes('M 34'))) return p;
-        if (p.tam === 'G' && (d.includes(' G ') || d.includes('G28') || d.includes('G 28')) && !d.includes('XG')) return p;
-        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG24') || d.includes('XG 24') || d.includes('XG26') || d.includes('XG 26')) && !d.includes('XXG')) return p;
-        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG22') || d.includes('XXG 22') || d.includes('XXG24'))) return p;
+        if (p.tam === 'G' && (d.includes(' G') || d.includes('G28') || d.includes('G28X')) && !d.includes('XG')) return p;
+        if (p.tam === 'XG' && (d.includes('XG') || d.includes('XG26') || d.includes('XG 26') || d.includes('XG24')) && !d.includes('XXG')) return p;
+        if (p.tam === 'XXG' && (d.includes('XXG') || d.includes('XXG24') || d.includes('XXG22') || d.includes('XXG24UND'))) return p;
       }
     }
 
-    // ── PAMPERS ───────────────────────────────────────────────────────────────
+        // ── PAMPERS ───────────────────────────────────────────────────────────────
     if (marca === 'PAMPERS') {
       if (!d.includes('PAMPERS')) continue;
       if (p.tam === 'RN 4kg' && (d.includes('RN') && d.includes('4'))) return p;
