@@ -150,6 +150,10 @@ window.loadDB = async function() {
         vendas: fbData.vendas||[],
         precos: fbData.precos||{},
         alertas: fbData.alertas||[],
+        nfsImportadas: fbData.nfsImportadas||[],
+        historicoPrecos: fbData.historicoPrecos||{},
+        validades: fbData.validades||[],
+        configuracoes: fbData.configuracoes||{},
       };
     } else {
       const local = localStorage.getItem('fraldas-msfarma-v3');
@@ -166,9 +170,20 @@ window.loadDB = async function() {
 // Salva no Firebase e localStorage
 window.saveDB = async function(data) {
   window._dbCache = data;
-  localStorage.setItem('fraldas-msfarma-v2', JSON.stringify(data));
+  localStorage.setItem('fraldas-msfarma-v3', JSON.stringify(data));
+  // Salva no Firebase só estoques, vendas, precos, alertas, nfsImportadas, historicoPrecos, validades, configuracoes
+  const toSave = {
+    estoques: data.estoques||{},
+    vendas: data.vendas||[],
+    precos: data.precos||{},
+    alertas: data.alertas||[],
+    nfsImportadas: data.nfsImportadas||[],
+    historicoPrecos: data.historicoPrecos||{},
+    validades: data.validades||[],
+    configuracoes: data.configuracoes||{},
+  };
   try {
-    await setDoc(DOC_REF, data);
+    await setDoc(DOC_REF, toSave);
   } catch(e) {
     console.warn('Erro ao salvar no Firebase:', e);
   }
@@ -185,6 +200,10 @@ onSnapshot(DOC_REF, (snap) => {
       vendas: fbData.vendas||[],
       precos: fbData.precos||{},
       alertas: fbData.alertas||[],
+      nfsImportadas: fbData.nfsImportadas||[],
+      historicoPrecos: fbData.historicoPrecos||{},
+      validades: fbData.validades||[],
+      configuracoes: fbData.configuracoes||{},
     };
     window._dbCache = merged;
     localStorage.setItem('fraldas-msfarma-v3', JSON.stringify(merged));
