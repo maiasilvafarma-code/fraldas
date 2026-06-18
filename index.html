@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-BR" translate="no">
+<html lang="pt-BR" translate="no" class="desktop-ready">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -113,6 +113,35 @@
   .secao-infantil{background:#1e3a5f;color:#60a5fa;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
   .secao-geriatrica{background:#3d2200;color:#fb923c;font-size:.65rem;padding:2px 7px;border-radius:20px;font-weight:700;}
   @media(max-width:480px){.form-grid{grid-template-columns:1fr;}}
+
+/* ── DESKTOP FULL SCREEN ── */
+@media(min-width:768px){
+  body { max-width: 100%; }
+  header { max-width: 100%; padding: 0 32px; }
+  .tabs { max-width: 100%; padding: 0 32px; justify-content: flex-start; gap: 4px; }
+  .tab { padding: 10px 18px; font-size: .82rem; }
+  .sec { max-width: 1200px; margin: 0 auto; padding: 20px 32px; }
+  .kpi-grid { grid-template-columns: repeat(4, 1fr); }
+  .modal { max-width: 520px; }
+  .form-grid { grid-template-columns: 1fr 1fr; }
+  #lista-estoque table { font-size: .82rem; }
+  #lista-estoque table th, #lista-estoque table td { padding: 10px 12px; }
+  .card { padding: 16px 20px; }
+  header h1 { font-size: 1.3rem; }
+  .sec-title { font-size: 1.1rem; }
+  /* Two column layout for dashboard */
+  #sec-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: start; }
+  #sec-dashboard .kpi-grid { grid-column: 1 / -1; }
+  #sec-dashboard #dash-meta { grid-column: 1 / -1; }
+  #sec-dashboard .alerta-box { grid-column: 1 / -1; }
+  /* Wider tables */
+  #lista-precos table, #lista-estoque table { width: 100%; }
+}
+
+@media(min-width:1200px){
+  .sec { max-width: 1400px; }
+  .kpi-grid { grid-template-columns: repeat(6, 1fr); }
+}
 </style>
 <script type="module">
 // ── FIREBASE CONFIG ───────────────────────────────────────────────────────────
@@ -519,6 +548,14 @@ window.showSync = function(msg, cor) {
       <div style="display:flex;align-items:flex-end"><button class="btn btn-primary" style="width:100%;justify-content:center" onclick="gerarExportacao()">📋 Gerar resumo</button></div>
     </div>
     <div id="integ-resultado"></div>
+  </div>
+
+  <div class="card" style="border:1px solid var(--vermelho)">
+    <div class="card-titulo">🗑️ Zerar Todo o Estoque</div>
+    <div style="font-size:.78rem;color:var(--muted);margin-bottom:12px">
+      Zera o estoque de todos os produtos. Use antes de importar XMLs do zero para evitar duplicação.
+    </div>
+    <button class="btn" style="width:100%;justify-content:center;background:var(--vermelho);color:#fff" onclick="zerarEstoque()">🗑️ Zerar todo o estoque</button>
   </div>
 
   <div class="card">
@@ -2819,6 +2856,17 @@ window.addEventListener('appinstalled', ()=>{
   if(b) b.remove();
   showSync && showSync('✅ App instalado com sucesso!','ok');
 });
+
+// ── ZERAR ESTOQUE ────────────────────────────────────────────────────────────
+function zerarEstoque() {
+  if (!confirm('⚠️ Isso vai zerar o estoque de TODOS os produtos. Tem certeza?')) return;
+  if (!confirm('⚠️ Segunda confirmação — estoque de todos os produtos vai para zero. Continuar?')) return;
+  const data = load();
+  Object.keys(data.estoques).forEach(id => { data.estoques[id] = 0; });
+  save(data);
+  alert('✅ Estoque zerado! Agora importe os XMLs para reconstruir.');
+  renderEstoque();
+}
 
 // ── BACKUP ────────────────────────────────────────────────────────────────────
 function exportarBackup() {
